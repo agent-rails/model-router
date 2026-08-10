@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Callable
 
-from model_router.types import RoutingDecision, TaskRequest
+from model_router.types import RoutingDecision, RoutingSource, TaskRequest
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,7 +41,7 @@ class InMemorySink:
         self.events.append(event)
 
     def keyword_flagged(self) -> tuple[RoutingEvent, ...]:
-        return tuple(e for e in self.events if e.decision.source.value == "keyword_flagged")
+        return tuple(e for e in self.events if e.decision.source == RoutingSource.KEYWORD_FLAGGED)
 
     def escalations(self) -> tuple[RoutingEvent, ...]:
-        return tuple(e for e in self.events if e.decision.source.value == "escalated")
+        return tuple(e for e in self.events if e.decision.source == RoutingSource.ESCALATED)

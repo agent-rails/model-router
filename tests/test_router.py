@@ -46,9 +46,7 @@ def test_keyword_hit_routes_safe_but_is_distinguishable_from_trusted_override():
 
 
 def test_category_override_takes_priority_over_keyword_scan():
-    decision = classify(
-        TaskRequest(prompt="just chatting, nothing about that other thing", category="warrant")
-    )
+    decision = classify(TaskRequest(prompt="just chatting, nothing about that other thing", category="warrant"))
     assert decision.source == RoutingSource.OVERRIDE
 
 
@@ -60,9 +58,7 @@ def test_agentic_task_bumps_to_complex_tier():
 
 
 def test_many_tool_schemas_bumps_moderate_to_complex():
-    decision = classify(
-        TaskRequest(prompt="do a thing", category="chat", tool_schema_count=6)
-    )
+    decision = classify(TaskRequest(prompt="do a thing", category="chat", tool_schema_count=6))
     assert decision.tier == TaskTier.COMPLEX
 
 
@@ -79,8 +75,51 @@ def test_very_long_prompt_bumps_moderate_to_complex():
 
 
 def test_agentic_task_gets_xhigh_effort_after_tier_bump_to_opus():
-    decision = classify(
-        TaskRequest(prompt="do a thing", category="summarization", is_agentic=True)
-    )
+    decision = classify(TaskRequest(prompt="do a thing", category="summarization", is_agentic=True))
     assert decision.model == Model.OPUS
     assert decision.effort == Effort.XHIGH
+
+
+def test_category_override_is_case_insensitive():
+    decision = classify(TaskRequest(prompt="rotate this", category="Auth"))
+    assert decision.model == Model.OPUS
+    assert decision.source == RoutingSource.OVERRIDE
+
+
+def test_category_override_ignores_surrounding_whitespace():
+    decision = classify(TaskRequest(prompt="rotate this", category=" agent_guard "))
+    assert decision.model == Model.OPUS
+    assert decision.source == RoutingSource.OVERRIDE
+
+
+def test_tag_override_is_case_insensitive():
+    decision = classify(TaskRequest(prompt="do the thing", tags=frozenset({"WARRANT"})))
+    assert decision.model == Model.OPUS
+    assert decision.source == RoutingSource.OVERRIDE
+
+
+def test_category_tier_lookup_is_case_insensitive():
+    decision = classify(TaskRequest(prompt="tag this ticket", category="Classification"))
+    assert decision.tier == TaskTier.TRIVIAL
+    assert decision.model == Model.HAIKU
+
+
+def test_unrecognized_category_reason_differs_from_absent_category_reason():
+    unrecognized = classify(TaskRequest(prompt="do something", category="not_a_real_category"))
+    absent = classify(TaskRequest(prompt="do something"))
+    assert unrecognized.reason != absent.reason
+    assert "not_a_real_category" in unrecognized.reason
+    assert "not recognized" in unrecognized.reason
+    assert "no category supplied" in absent.reason
+
+
+def test_keyword_scan_matches_hyphen_and_underscore_variants():
+    hyphen = classify(TaskRequest(prompt="review this agent-guard change"))
+    underscore = classify(TaskRequest(prompt="review this agent_guard change"))
+    assert hyphen.source == RoutingSource.KEYWORD_FLAGGED
+    assert underscore.source == RoutingSource.KEYWORD_FLAGGED
+
+
+def test_keyword_scan_matches_underscore_variant_of_multiword_keyword():
+    decision = classify(TaskRequest(prompt="need a fresh api_key for this integration"))
+    assert decision.source == RoutingSource.KEYWORD_FLAGGED

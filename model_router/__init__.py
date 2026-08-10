@@ -6,15 +6,15 @@ from model_router.types import RoutingDecision, RoutingSource, TaskRequest, Task
 
 __all__ = [
     "CascadeResult",
-    "route_with_cascade",
     "Effort",
-    "Model",
-    "classify",
     "EmitFn",
     "InMemorySink",
-    "RoutingEvent",
+    "Model",
     "RoutingDecision",
+    "RoutingEvent",
     "RoutingSource",
     "TaskRequest",
     "TaskTier",
+    "classify",
+    "route_with_cascade",
 ]

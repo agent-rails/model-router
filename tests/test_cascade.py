@@ -1,3 +1,5 @@
+import pytest
+
 from model_router import InMemorySink, Model, RoutingSource, TaskRequest, route_with_cascade
 
 
@@ -45,9 +47,7 @@ def test_respects_max_escalations_cap():
         models_called.append(model)
         return "always bad"
 
-    result = route_with_cascade(
-        task, call_fn, validate_fn=lambda r: False, max_escalations=2
-    )
+    result = route_with_cascade(task, call_fn, validate_fn=lambda r: False, max_escalations=2)
     assert result.escalations == 2
     assert models_called == [Model.HAIKU, Model.SONNET, Model.OPUS]
 
@@ -61,12 +61,58 @@ def test_no_infinite_loop_once_already_at_opus_ceiling():
         call_count += 1
         return "still bad"
 
-    result = route_with_cascade(
-        task, call_fn, validate_fn=lambda r: False, max_escalations=5
-    )
+    result = route_with_cascade(task, call_fn, validate_fn=lambda r: False, max_escalations=5)
     assert call_count == 1
     assert result.escalations == 0
     assert result.final_decision.model == Model.OPUS
+
+
+def test_max_escalations_zero_makes_exactly_one_call():
+    task = TaskRequest(prompt="classify this", category="classification")
+    call_count = 0
+
+    def call_fn(model, effort, prompt):
+        nonlocal call_count
+        call_count += 1
+        return "always bad"
+
+    result = route_with_cascade(task, call_fn, validate_fn=lambda r: False, max_escalations=0)
+    assert call_count == 1
+    assert result.escalations == 0
+
+
+def test_negative_max_escalations_makes_exactly_one_call():
+    task = TaskRequest(prompt="classify this", category="classification")
+    call_count = 0
+
+    def call_fn(model, effort, prompt):
+        nonlocal call_count
+        call_count += 1
+        return "always bad"
+
+    result = route_with_cascade(task, call_fn, validate_fn=lambda r: False, max_escalations=-3)
+    assert call_count == 1
+    assert result.escalations == 0
+
+
+def test_validate_fn_exception_propagates():
+    task = TaskRequest(prompt="classify this", category="classification")
+
+    def raising_validate(response):
+        raise ValueError("bad response shape")
+
+    with pytest.raises(ValueError, match="bad response shape"):
+        route_with_cascade(task, lambda model, effort, prompt: "ok", validate_fn=raising_validate)
+
+
+def test_call_fn_exception_propagates():
+    task = TaskRequest(prompt="classify this", category="classification")
+
+    def raising_call_fn(model, effort, prompt):
+        raise RuntimeError("api unreachable")
+
+    with pytest.raises(RuntimeError, match="api unreachable"):
+        route_with_cascade(task, raising_call_fn)
 
 
 def test_emits_telemetry_for_initial_and_escalated_decisions():

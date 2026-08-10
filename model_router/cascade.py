@@ -1,15 +1,13 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Generic, TypeVar
 
 from model_router.config import ESCALATION_PATH
 from model_router.models import Effort, Model
 from model_router.router import classify
 from model_router.telemetry import EmitFn, build_event
 from model_router.types import RoutingDecision, RoutingSource, TaskRequest, TaskTier
-
-ResponseT = TypeVar("ResponseT")
 
 _TIER_ORDER = [TaskTier.TRIVIAL, TaskTier.MODERATE, TaskTier.COMPLEX]
 
@@ -33,7 +31,7 @@ def _escalate(decision: RoutingDecision, task: TaskRequest) -> RoutingDecision:
 
 
 @dataclass(frozen=True, slots=True)
-class CascadeResult(Generic[ResponseT]):
+class CascadeResult[ResponseT]:
     response: ResponseT
     attempts: tuple[RoutingDecision, ...]
 
@@ -46,7 +44,7 @@ class CascadeResult(Generic[ResponseT]):
         return len(self.attempts) - 1
 
 
-def route_with_cascade(
+def route_with_cascade[ResponseT](
     task: TaskRequest,
     call_fn: Callable[[Model, Effort, str], ResponseT],
     validate_fn: Callable[[ResponseT], bool] | None = None,

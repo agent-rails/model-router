@@ -2,11 +2,18 @@
 name = "model-router"
 version = "0.1.0"
 description = "Cost-efficient model+effort routing for Claude API calls"
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0"]
+dev = ["pytest>=8.0", "ruff>=0.8"]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
 
 [build-system]
 requires = ["setuptools>=68"]

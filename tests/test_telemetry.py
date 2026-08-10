@@ -17,6 +17,16 @@ def test_sink_filters_keyword_flagged():
     assert flagged[0].category is None
 
 
+def test_event_never_carries_raw_prompt_text():
+    distinctive_prompt = "the-secret-marker-xyz789 do this classification task"
+    sink = InMemorySink()
+    classify(TaskRequest(prompt=distinctive_prompt, category="classification"), emit=sink)
+    event = sink.events[0]
+    for field_value in (event.category, str(event.tags), event.decision.reason):
+        assert distinctive_prompt not in str(field_value)
+    assert not hasattr(event, "prompt")
+
+
 def test_event_captures_task_metadata():
     sink = InMemorySink()
     classify(

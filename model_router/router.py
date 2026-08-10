@@ -14,17 +14,26 @@ from model_router.telemetry import EmitFn, build_event
 from model_router.types import RoutingDecision, RoutingSource, TaskRequest, TaskTier
 
 
+def _normalize_identifier(value: str) -> str:
+    return value.strip().casefold()
+
+
+def _normalize_prompt(prompt: str) -> str:
+    return prompt.casefold().replace("-", " ").replace("_", " ")
+
+
 def _override_reason(task: TaskRequest) -> tuple[str, RoutingSource] | None:
-    if task.category in OVERRIDE_CATEGORIES:
+    if task.category is not None and _normalize_identifier(task.category) in OVERRIDE_CATEGORIES:
         return f"category '{task.category}' is security-critical", RoutingSource.OVERRIDE
 
-    hit_tags = task.tags & OVERRIDE_CATEGORIES
+    normalized_tags = {_normalize_identifier(tag) for tag in task.tags}
+    hit_tags = normalized_tags & OVERRIDE_CATEGORIES
     if hit_tags:
         return f"tag(s) {sorted(hit_tags)} are security-critical", RoutingSource.OVERRIDE
 
-    prompt_lower = task.prompt.lower()
+    normalized_prompt = _normalize_prompt(task.prompt)
     for keyword in OVERRIDE_KEYWORDS:
-        if keyword in prompt_lower:
+        if keyword in normalized_prompt:
             return (
                 f"prompt text matched keyword '{keyword}' (unverified, flagged for audit)",
                 RoutingSource.KEYWORD_FLAGGED,
@@ -34,11 +43,18 @@ def _override_reason(task: TaskRequest) -> tuple[str, RoutingSource] | None:
 
 
 def _base_tier(task: TaskRequest) -> tuple[TaskTier, str]:
-    if task.category and task.category in CATEGORY_TIER:
-        tier = CATEGORY_TIER[task.category]
+    if task.category is None:
+        return TaskTier.MODERATE, "no category supplied, defaulted to moderate"
+
+    normalized = _normalize_identifier(task.category)
+    if normalized in CATEGORY_TIER:
+        tier = CATEGORY_TIER[normalized]
         return tier, f"category '{task.category}' maps to {tier.value}"
 
-    return TaskTier.MODERATE, "no category supplied, defaulted to moderate"
+    return (
+        TaskTier.MODERATE,
+        f"category '{task.category}' not recognized, defaulted to moderate",
+    )
 
 
 def _apply_signal_bumps(tier: TaskTier, task: TaskRequest, base_reason: str) -> tuple[TaskTier, str]:
