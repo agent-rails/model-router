@@ -33,6 +33,17 @@ result.escalations
 
 Always declare `category` at call sites that know their own task type — the heuristic fallback (no category given) is a safety net, not the primary mechanism. See `docs/DESIGN.md` § Trust boundary.
 
+For persistent telemetry across runs, use `JsonlSink` instead of `InMemorySink`:
+
+```python
+from model_router import JsonlSink
+
+sink = JsonlSink("~/.model_router/events.jsonl")
+decision = classify(task, emit=sink)
+```
+
+See `examples/claude_code_subagents.py` for a worked example of mapping a specific caller's task types (this repo's Claude Code subagent roster) to router categories — that mapping is caller-side config, not part of the library.
+
 ## Run tests
 
 ```bash

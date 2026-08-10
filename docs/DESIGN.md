@@ -44,6 +44,12 @@ The one thing that should never be true of this router: a heuristic guess quietl
 
 Without this, there's no way to know whether the heuristic thresholds are actually calibrated, or whether `KEYWORD_FLAGGED` is mostly false positives. This is the hook a future learned-classifier stage would train against, if traffic volume ever justifies it — see "Not built" below.
 
+`JsonlSink` (`model_router/sinks.py`) is the reference persistent sink — appends one JSON line per `RoutingEvent` to a local file, same no-raw-prompt guarantee as the in-memory sink. `InMemorySink` is for tests/one-off scripts; `JsonlSink` is for anything meant to accumulate across runs.
+
+## Harness integration
+
+`examples/claude_code_subagents.py` is a worked integration for a specific caller (this Claude Code environment's named subagent roster — Explore, implementer, sentinel, worf, etc.) mapping each subagent type to a router category, with security-reviewer agents (sentinel, spock, worf) tagged to always hit the hard override regardless of task content. It's deliberately kept out of `model_router/` proper — the library's `CATEGORY_TIER` vocabulary (classification, coding_complex, architecture, ...) is meant to be generic; a specific harness's subagent-name-to-category mapping is caller-side config, not library surface. Any other integration should follow the same shape: a small local `SUBAGENT_CATEGORY`-style dict plus a `task_for_subagent()`-style helper, not a change to `model_router/config.py`.
+
 ## Not built (deliberately)
 
 - **No ML classifier.** A learned router (embeddings + trained model, à la RouteLLM) needs labeled (prompt, best-model) pairs at volume. There's no such dataset yet. Building one now would be guessing at a cost function with no data to validate against. The heuristic + cascade design gets most of the savings without it; the observability hook above is the seam to revisit this once real traffic exists.

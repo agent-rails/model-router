@@ -24,4 +24,4 @@ include = ["model_router*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["."]
+pythonpath = [".", "examples"]
