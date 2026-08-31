@@ -1,4 +1,5 @@
 from model_router.cascade import CascadeResult, route_with_cascade
+from model_router.gateway import gateway_alias
 from model_router.models import Effort, Model
 from model_router.router import classify
 from model_router.sinks import JsonlSink
@@ -18,5 +19,6 @@ __all__ = [
     "TaskRequest",
     "TaskTier",
     "classify",
+    "gateway_alias",
     "route_with_cascade",
 ]

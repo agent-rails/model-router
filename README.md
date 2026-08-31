@@ -31,6 +31,22 @@ result.final_decision.model
 result.escalations
 ```
 
+To resolve a decision through an OpenAI-compatible gateway such as LiteLLM,
+keep deployment aliases in caller configuration and map only tiers that have
+passed that caller's evals:
+
+```python
+from model_router import TaskTier, gateway_alias
+
+alias = gateway_alias(
+    decision,
+    {TaskTier.TRIVIAL: "ollama-default"},
+)
+```
+
+Missing and blank mappings fail closed. The library does not assume that a
+particular local or hosted deployment satisfies a quality tier.
+
 Always declare `category` at call sites that know their own task type — the heuristic fallback (no category given) is a safety net, not the primary mechanism. See `docs/DESIGN.md` § Trust boundary.
 
 For persistent telemetry across runs, use `JsonlSink` instead of `InMemorySink`:
