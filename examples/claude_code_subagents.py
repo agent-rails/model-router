@@ -12,6 +12,7 @@ SUBAGENT_CATEGORY: dict[str, str] = {
     "researcher": "data_analysis",
     "architect": "architecture",
     "architect-reviewer": "code_review",
+    "principal-architect": "architecture",
     "ai-architect": "architecture",
     "sentinel-fetcher": "extraction",
     "sentinel-scribe": "summarization",
@@ -32,6 +33,7 @@ SUBAGENT_CATEGORY: dict[str, str] = {
 }
 
 SUBAGENT_OVERRIDE_TAGS: dict[str, frozenset[str]] = {
+    "data": frozenset({"security_review"}),
     "sentinel": frozenset({"security_review"}),
     "spock": frozenset({"security_review"}),
     "worf": frozenset({"security_review"}),
