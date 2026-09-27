@@ -4,7 +4,13 @@ from claude_code_subagents import (
     task_for_subagent,
 )
 
-from model_router import InMemorySink, Model, RoutingSource, classify
+from model_router import (
+    InMemorySink,
+    Model,
+    RoutingSource,
+    classify,
+    route_with_cascade,
+)
 from model_router.sinks import event_to_json
 
 
@@ -37,14 +43,58 @@ def test_caller_overrides_win_over_defaults():
     assert task.category == "simple_qa"
 
 
-def test_decision_for_subagent_records_nothing_without_a_sink():
+def test_decision_for_subagent_passes_no_sink_by_default(monkeypatch):
     # A helper that silently appends to a file in the caller's home directory is
     # not something a test should have to opt out of, so emit=None is the default.
-    sink = InMemorySink()
+    # Asserting on a sink that was never passed would pass no matter what the
+    # helper did with emit, so this spies on the seam instead.
+    seen: list[object] = []
+
+    def spy(task, emit=None):
+        seen.append(emit)
+        return classify(task)
+
+    monkeypatch.setattr("claude_code_subagents.classify", spy)
     decision_for_subagent("implementer", "add a retry loop")
-    assert sink.events == []
+    assert seen == [None]
+
+
+def test_decision_for_subagent_records_through_a_supplied_sink():
+    sink = InMemorySink()
     decision_for_subagent("implementer", "add a retry loop", emit=sink)
     assert len(sink.events) == 1
+
+
+def test_shares_are_per_dispatch_not_per_event():
+    # route_with_cascade re-emits through the same sink on every escalation, so a
+    # dispatch that escalated contributes two events. Counting events deflated
+    # every share by the escalation rate -- biasing fallback_share toward "no
+    # headroom", the wrong direction for a build-or-not decision.
+    sink = InMemorySink()
+    route_with_cascade(
+        task_for_subagent("unmapped-agent", "do a thing"),
+        call_fn=lambda model, effort, prompt: "unusable",
+        validate_fn=lambda response: False,
+        emit=sink,
+    )
+    summary = calibration_summary([event_to_json(e) for e in sink.events])
+
+    assert summary["total"] == 2
+    assert summary["dispatches"] == 1
+    assert summary["fallback_share"] == 1.0
+    assert summary["escalations_per_dispatch"] == 1.0
+
+
+def test_a_declared_but_unrecognised_category_is_reported_separately():
+    # It routes to the same MODERATE default on no usable signal, but the fix is
+    # to correct the caller's mapping, not to add a classifier -- so folding it
+    # into fallback_share would point the reader at the wrong work.
+    sink = InMemorySink()
+    decision_for_subagent("implementer", "add a field", category="frobnicate", emit=sink)
+    summary = calibration_summary([event_to_json(e) for e in sink.events])
+
+    assert summary["unrecognized_category_share"] == 1.0
+    assert summary["fallback_share"] == 0.0
 
 
 def test_fallback_share_counts_only_traffic_a_classifier_could_improve():
