@@ -118,3 +118,33 @@ def test_calibration_summary_reports_no_shares_for_an_empty_log():
     # Dividing by zero to report a share of nothing would be worse than
     # declining to answer, so the empty case returns the count alone.
     assert calibration_summary([]) == {"total": 0}
+
+
+def test_a_recognised_category_in_mixed_case_is_not_reported_as_unrecognised():
+    # classify normalises before the CATEGORY_TIER lookup, so a summary testing raw
+    # membership flags correctly-mapped callers as mapping bugs -- and does it in the
+    # direction that manufactures work. The library owns the recognition rule;
+    # re-implementing it here is what drifted.
+    sink = InMemorySink()
+    decision_for_subagent("implementer", "add a field", category="Coding_Simple", emit=sink)
+    summary = calibration_summary([event_to_json(e) for e in sink.events])
+
+    assert summary["unrecognized_category_share"] == 0.0
+
+
+def test_a_slice_of_only_escalations_declines_to_report_shares():
+    # Reachable on a bounded tail of a growing log, or a filter down to escalations.
+    # The empty-log case states the principle; this is the same hazard reintroduced
+    # by counting dispatches instead of events.
+    sink = InMemorySink()
+    route_with_cascade(
+        task_for_subagent("unmapped-agent", "do a thing"),
+        call_fn=lambda model, effort, prompt: "unusable",
+        validate_fn=lambda response: False,
+        emit=sink,
+    )
+    escalations_only = [event_to_json(e) for e in sink.events if e.decision.source == RoutingSource.ESCALATED]
+    summary = calibration_summary(escalations_only)
+
+    assert summary["dispatches"] == 0
+    assert "fallback_share" not in summary

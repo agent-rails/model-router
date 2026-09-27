@@ -3,8 +3,13 @@ from __future__ import annotations
 from collections import Counter
 from pathlib import Path
 
-from model_router import JsonlSink, RoutingDecision, TaskRequest, classify
-from model_router.config import CATEGORY_TIER
+from model_router import (
+    JsonlSink,
+    RoutingDecision,
+    TaskRequest,
+    classify,
+    is_recognized_category,
+)
 from model_router.telemetry import EmitFn
 
 SUBAGENT_CATEGORY: dict[str, str] = {
@@ -138,10 +143,16 @@ def calibration_summary(events: list[dict]) -> dict[str, object]:
     # escalation rate.
     escalations = sources.get("escalated", 0)
     dispatches = total - escalations
+    if dispatches == 0:
+        # Reachable on any slice containing only escalations -- a bounded tail of
+        # a growing log, or a filter down to escalations for a drill-down. The
+        # empty-log guard above states the principle: dividing by zero to report
+        # a share of nothing is worse than declining to answer.
+        return {"total": total, "dispatches": 0, "sources": dict(sources)}
 
     heuristic = [e for e in events if e["decision"]["source"] == "heuristic"]
     improvable = sum(1 for e in heuristic if e["category"] is None)
-    unrecognized = sum(1 for e in heuristic if e["category"] is not None and e["category"] not in CATEGORY_TIER)
+    unrecognized = sum(1 for e in heuristic if e["category"] is not None and not is_recognized_category(e["category"]))
 
     return {
         "total": total,

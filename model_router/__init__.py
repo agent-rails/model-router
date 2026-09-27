@@ -1,7 +1,7 @@
 from model_router.cascade import CascadeResult, route_with_cascade
 from model_router.gateway import gateway_alias
 from model_router.models import Effort, Model
-from model_router.router import classify
+from model_router.router import classify, is_recognized_category
 from model_router.sinks import JsonlSink
 from model_router.telemetry import EmitFn, InMemorySink, RoutingEvent
 from model_router.types import RoutingDecision, RoutingSource, TaskRequest, TaskTier
@@ -20,5 +20,6 @@ __all__ = [
     "TaskTier",
     "classify",
     "gateway_alias",
+    "is_recognized_category",
     "route_with_cascade",
 ]
