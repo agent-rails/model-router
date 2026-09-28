@@ -44,6 +44,25 @@ The one thing that should never be true of this router: a heuristic guess quietl
 
 Without this, there's no way to know whether the heuristic thresholds are actually calibrated, or whether `KEYWORD_FLAGGED` is mostly false positives. This is the hook a future learned-classifier stage would train against, if traffic volume ever justifies it — see "Not built" below.
 
+### What the first 76 dispatches showed
+
+Measured 2026-09-28 against this environment's advisory log (`~/.claude/model-routing.jsonl`), 76 dispatches, no escalations:
+
+| | count |
+|---|---|
+| `KEYWORD_FLAGGED` recommendations | 28 (37%) |
+| of those, that changed which model actually ran | **0** |
+| recommendation matched what ran (`agreed`) | 63 (83%) |
+| router recommended cheaper, a more expensive model ran | 8 |
+
+The keyword path fired on 37% of dispatches and altered nothing. Each match resolved one of three ways: it agreed with a declared category that already reached `complex` (2); it fired on a caller with no declared category at all, where a later category mapping now reaches `complex` without it (22); or it recommended Opus for an agent whose own config pinned Sonnet, and the pin won (5, all summarisation/review agents).
+
+That last group is the useful part. A keyword override that a caller-side pin silently outranks is not a fail-safe — it is an unenforced suggestion, and the log is the only place its ineffectiveness is visible. It does not follow that the keyword list should be trimmed: a mechanism that has never changed a decision has also never cost anything, and the 22 no-category matches are evidence it does real work exactly when category config is missing — which is the case it exists for.
+
+The genuine overspend was elsewhere and was not the router's doing: 8 dispatches where the router recommended Sonnet and Opus ran, split evenly between a caller-side model pin and an explicit human choice. Both sit above this library. The router was right and advisory, in that order.
+
+Revisit when the log passes ~300 dispatches, or on the first `KEYWORD_FLAGGED` match that does change which model runs — whichever is first. Until then the honest summary of stage 1's untrusted path is: correctly provenanced, and so far inert.
+
 `JsonlSink` (`model_router/sinks.py`) is the reference persistent sink — appends one JSON line per `RoutingEvent` to a local file, same no-raw-prompt guarantee as the in-memory sink. `InMemorySink` is for tests/one-off scripts; `JsonlSink` is for anything meant to accumulate across runs.
 
 ## Harness integration
