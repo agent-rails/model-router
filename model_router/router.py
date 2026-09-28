@@ -18,6 +18,16 @@ def _normalize_identifier(value: str) -> str:
     return value.strip().casefold()
 
 
+def is_recognized_category(category: str) -> bool:
+    """Whether classify() will route on this category rather than defaulting.
+
+    Exported because a caller measuring how often its own mapping misses has to
+    ask the same question classify() asks, and re-implementing the membership
+    test drifts the moment normalisation changes.
+    """
+    return _normalize_identifier(category) in CATEGORY_TIER
+
+
 def _normalize_prompt(prompt: str) -> str:
     return prompt.casefold().replace("-", " ").replace("_", " ")
 
