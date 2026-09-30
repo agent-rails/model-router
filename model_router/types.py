@@ -28,6 +28,7 @@ class TaskRequest:
     requires_structured_output: bool = False
     is_agentic: bool = False
     independent_workstreams: int = 1
+    metadata_trusted: bool = True
 
 
 @dataclass(frozen=True, slots=True)

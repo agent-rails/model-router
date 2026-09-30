@@ -48,7 +48,12 @@ alias = gateway_alias(
 Missing and blank mappings fail closed. The library does not assume that a
 particular local or hosted deployment satisfies a quality tier.
 
-Always declare `category` at call sites that know their own task type — the heuristic fallback (no category given) is a safety net, not the primary mechanism. See `docs/DESIGN.md` § Trust boundary.
+Call sites that know their task type should still declare `category`. For a free-text
+task at the CLI boundary, `infer_task(prompt)` uses conservative, zero-token rules:
+clear bounded transformations may use Luna, unknown intent defaults to Sol/medium,
+and security-sensitive instructions route to Sol/high. Inferred metadata is marked
+untrusted. This is task-start routing, not a learned classifier or a measured
+quality improvement. See `docs/DESIGN.md` § Trust boundary.
 
 For persistent telemetry across runs, use `JsonlSink` instead of `InMemorySink`:
 
@@ -66,7 +71,9 @@ See `examples/claude_code_subagents.py` for a worked example of mapping a specif
 ```python
 from model_router import TaskRequest, plan_task
 
-task = TaskRequest(prompt="fix this small test", category="coding_simple")
+from model_router import infer_task
+
+task = infer_task("Fix this small test").request
 plan = plan_task(task)
 # codex / gpt-6-sol / medium / implement_verify
 ```

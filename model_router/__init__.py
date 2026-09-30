@@ -1,6 +1,7 @@
 from model_router.cascade import CascadeResult, route_with_cascade
 from model_router.codex import CodexModel, CodexPlan, Workflow, plan_codex
 from model_router.gateway import gateway_alias
+from model_router.inference import TaskInference, infer_task
 from model_router.local import LocalQualification, Runtime, TaskPlan, plan_task
 from model_router.models import Effort, Model
 from model_router.router import classify, is_recognized_category
@@ -22,12 +23,14 @@ __all__ = [
     "RoutingEvent",
     "RoutingSource",
     "Runtime",
+    "TaskInference",
     "TaskPlan",
     "TaskRequest",
     "TaskTier",
     "Workflow",
     "classify",
     "gateway_alias",
+    "infer_task",
     "is_recognized_category",
     "plan_codex",
     "plan_task",
