@@ -44,6 +44,7 @@ def test_delegation_requires_explicit_workstreams():
 def test_unrecognized_task_defaults_to_sol_medium():
     plan = plan_codex(TaskRequest(prompt="something new"))
     assert (plan.model, plan.effort) == (CodexModel.SOL, Effort.MEDIUM)
+    assert plan.workflow == Workflow.DIRECT
 
 
 def test_research_category_gets_design_workflow_and_complex_effort():

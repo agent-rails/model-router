@@ -23,12 +23,14 @@ _RISK = re.compile(
 _RESEARCH = re.compile(r"\b(research|investigate|evaluate|compare|survey)\b", re.IGNORECASE)
 _DESIGN = re.compile(r"\b(design|architect|architecture|system design)\b", re.IGNORECASE)
 _COMPLEX = re.compile(
-    r"\b(distributed|concurrency|cross.repo|multi.repo|migration|state machine|race condition|end.to.end)\b",
+    r"\b(distributed|concurrency|cross.repo|multi.repo|migration|state machine|race condition|end.to.end|refactor)\b",
     re.IGNORECASE,
 )
 _DEBUG = re.compile(r"\b(debug|failing|failure|root cause|why does|broken)\b", re.IGNORECASE)
-_REVIEW = re.compile(r"\b(review|audit)\b", re.IGNORECASE)
-_CODE = re.compile(r"\b(fix|implement|build|add|change|update|refactor|write|create)\b", re.IGNORECASE)
+_REVIEW = re.compile(r"^\s*(?:(?:can|could) you\s+|please\s+)?(?:review|audit)\b", re.IGNORECASE)
+_SUMMARY = re.compile(r"^\s*(?:please\s+)?summari[sz]e\b", re.IGNORECASE)
+_CHAT = re.compile(r"^\s*chat:|\b(?:draft|compose)\b.{0,100}\b(?:email|message|letter|post)\b", re.IGNORECASE)
+_CODE = re.compile(r"\b(fix|implement|build|add|update|write|create)\b", re.IGNORECASE)
 _NARROW = (
     (re.compile(r"^\s*(classify|label|tag)\b", re.IGNORECASE), "classification"),
     (re.compile(r"^\s*extract\b", re.IGNORECASE), "extraction"),
@@ -54,16 +56,20 @@ def infer_task(prompt: str) -> TaskInference:
     tags = frozenset(topic for pattern, topic in _AI_TOPICS if pattern.search(lead))
     if _RISK.search(lead):
         category, rule = "security_review", "risk term in leading instruction"
+    elif _REVIEW.search(lead):
+        category, rule = "code_review", "review intent"
+    elif _DEBUG.search(lead):
+        category, rule = "debugging_hard", "investigation intent"
     elif _DESIGN.search(lead):
         category, rule = "architecture", "design intent"
     elif _RESEARCH.search(lead):
         category, rule = "research", "research intent"
     elif _COMPLEX.search(lead):
         category, rule = "coding_complex", "complex implementation signal"
-    elif _DEBUG.search(lead):
-        category, rule = "debugging_hard", "investigation intent"
-    elif _REVIEW.search(lead):
-        category, rule = "code_review", "review intent"
+    elif _SUMMARY.search(lead):
+        category, rule = "summarization", "summary intent"
+    elif _CHAT.search(lead):
+        category, rule = "chat", "communication intent"
     elif _CODE.search(lead):
         category, rule = "coding_simple", "implementation intent"
     else:
