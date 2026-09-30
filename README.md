@@ -1,8 +1,9 @@
 # model-router
 
-Cost-efficient model + effort routing for Claude API calls. Picks the cheapest model/effort tier that's fit for a task, with a hard override for security-critical work and an optional cascade-escalation path for when the cheap tier turns out wrong.
+Task tier and effort recommendations for Claude API calls and Codex dispatches. Security-sensitive work has a stronger floor. Callers own execution and verification.
 
 See `docs/DESIGN.md` for architecture and rationale, `docs/THREAT_MODEL.md` for known limitations and residual risk.
+See `docs/CODEX_ROUTING.md` for the Codex/local policy and its qualification gate.
 
 ## Install
 
@@ -59,6 +60,34 @@ decision = classify(task, emit=sink)
 ```
 
 See `examples/claude_code_subagents.py` for a worked example of mapping a specific caller's task types (this repo's Claude Code subagent roster) to router categories — that mapping is caller-side config, not part of the library.
+
+## Codex and local inference
+
+```python
+from model_router import TaskRequest, plan_task
+
+task = TaskRequest(prompt="fix this small test", category="coding_simple")
+plan = plan_task(task)
+# codex / gpt-6-sol / medium / implement_verify
+```
+
+`plan_codex()` recommends Luna/high for narrow non-code tasks, Sol/medium for
+ordinary work, and Sol/high for complex or security-sensitive work. It recommends
+a workflow and, for AI-system tasks, a short set of wiki pointers. Delegation is
+suggested only when the caller declares multiple independent workstreams. These
+are task-start recommendations, not mid-turn control of an active Codex session.
+
+`plan_task()` may select Ollama only when the caller supplies a current
+`LocalQualification` for the exact installed model digest, task category, and
+measured latency. By default there is no qualified local candidate. The prior
+`llama3.1:8b` tool-use evaluation failed a no-tool-needed case, so its presence on
+the host is not qualification. Security, agentic, tool-using, and structured-output
+tasks stay with Codex in this initial policy. The caller must check the installed
+digest at dispatch and re-evaluate after model or policy changes.
+
+The sibling provider-router has `examples/smart_dispatch.py`, a dry-run CLI that
+turns this plan into explicit Codex model/effort settings or a qualified local
+request. See its README for invocation and qualification record format.
 
 ## Run tests
 

@@ -27,6 +27,7 @@ class TaskRequest:
     tool_schema_count: int = 0
     requires_structured_output: bool = False
     is_agentic: bool = False
+    independent_workstreams: int = 1
 
 
 @dataclass(frozen=True, slots=True)

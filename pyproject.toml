@@ -1,7 +1,7 @@
 [project]
 name = "model-router"
 version = "0.1.0"
-description = "Cost-efficient model+effort routing for Claude API calls"
+description = "Task and workflow routing for Claude, Codex, and qualified local models"
 requires-python = ">=3.13"
 dependencies = []
 
