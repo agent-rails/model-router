@@ -32,11 +32,9 @@ class CodexPlan:
     workflow: Workflow
     workflow_steps: tuple[str, ...]
     suggest_delegation: bool
-    context_files: tuple[str, ...]
     reason: str
 
 
-_AI_TAGS = frozenset({"ai_systems", "llm", "inference", "orchestration", "routing", "distributed_ai"})
 _RESEARCH_CATEGORIES = frozenset({"architecture", "research", "design"})
 _INVESTIGATE_CATEGORIES = frozenset({"debugging_hard", "code_review", "security_review"})
 _WORKFLOW_STEPS: dict[Workflow, tuple[str, ...]] = {
@@ -44,7 +42,7 @@ _WORKFLOW_STEPS: dict[Workflow, tuple[str, ...]] = {
     Workflow.IMPLEMENT_VERIFY: ("inspect relevant files", "make a scoped change", "run relevant checks"),
     Workflow.INVESTIGATE_VERIFY: ("gather evidence", "reproduce or test", "report findings and limits"),
     Workflow.RESEARCH_DESIGN: (
-        "read relevant wiki pages and current primary sources",
+        "read relevant project knowledge and current primary sources",
         "explain mechanisms and failure domains",
         "propose a small design and evaluation",
     ),
@@ -60,31 +58,6 @@ def _workflow(category: str | None, tier: TaskTier) -> Workflow:
     if tier == TaskTier.TRIVIAL and normalized not in {"coding_simple", "coding_complex"}:
         return Workflow.DIRECT
     return Workflow.IMPLEMENT_VERIFY
-
-
-def _context_files(task: TaskRequest) -> tuple[str, ...]:
-    tags = {tag.strip().casefold() for tag in task.tags}
-    category = (task.category or "").strip().casefold()
-    if not tags.intersection(_AI_TAGS) and category not in {"inference", "orchestration", "routing", "distributed_ai"}:
-        return ()
-    files = ["~/wiki/index.md", "~/wiki/foundations/ai-systems-foundations.md"]
-    topic = next(
-        (
-            name
-            for name in ("inference", "orchestration", "routing", "distributed_ai")
-            if name in tags or name == category
-        ),
-        None,
-    )
-    relevant = {
-        "inference": "~/wiki/foundations/inference-memory-and-compute.md",
-        "orchestration": "~/wiki/foundations/orchestration-state-and-memory.md",
-        "routing": "~/wiki/queries/llm-routing-gateway-handoff.md",
-        "distributed_ai": "~/wiki/foundations/distributed-ai-systems.md",
-    }
-    if topic is not None:
-        files.append(relevant[topic])
-    return tuple(files)
 
 
 def plan_codex(task: TaskRequest) -> CodexPlan:
@@ -130,6 +103,5 @@ def plan_codex(task: TaskRequest) -> CodexPlan:
         workflow=workflow,
         workflow_steps=_WORKFLOW_STEPS[workflow],
         suggest_delegation=task.independent_workstreams >= 2 and tier != TaskTier.TRIVIAL,
-        context_files=_context_files(task),
         reason=reason,
     )

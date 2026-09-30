@@ -2,6 +2,11 @@
 
 Task tier and effort recommendations for Claude API calls and Codex dispatches. Security-sensitive work has a stronger floor. Callers own execution and verification.
 
+**Status: experimental.** The rules are tested, but no accepted-task quality or
+cost comparison has shown that they save money. This package does not change
+the model in an active chat. The caller owns the provider adapter, permissions,
+project knowledge, and validation.
+
 See `docs/DESIGN.md` for architecture and rationale, `docs/THREAT_MODEL.md` for known limitations and residual risk.
 See `docs/CODEX_ROUTING.md` for the Codex/local policy and its qualification gate.
 
@@ -69,9 +74,7 @@ See `examples/claude_code_subagents.py` for a worked example of mapping a specif
 ## Codex and local inference
 
 ```python
-from model_router import TaskRequest, plan_task
-
-from model_router import infer_task
+from model_router import infer_task, plan_task
 
 task = infer_task("Fix this small test").request
 plan = plan_task(task)
@@ -80,8 +83,9 @@ plan = plan_task(task)
 
 `plan_codex()` recommends Luna/high for narrow non-code tasks, Sol/medium for
 ordinary work, and Sol/high for complex or security-sensitive work. It recommends
-a workflow and, for AI-system tasks, a short set of wiki pointers. Delegation is
-suggested only when the caller declares multiple independent workstreams. These
+a workflow. AI-system tags remain available to callers, which map them to their
+own project knowledge. Delegation is suggested only when the caller declares
+multiple independent workstreams. These
 are task-start recommendations, not mid-turn control of an active Codex session.
 
 `plan_task()` may select Ollama only when the caller supplies a current

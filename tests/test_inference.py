@@ -35,6 +35,6 @@ def test_full_prompt_still_triggers_existing_security_flag():
     assert plan.source == RoutingSource.KEYWORD_FLAGGED
 
 
-def test_ai_topic_only_adds_targeted_wiki_pointers():
-    plan = plan_codex(infer_task("Design an inference scheduler").request)
-    assert "~/wiki/foundations/inference-memory-and-compute.md" in plan.context_files
+def test_ai_topic_is_available_to_caller_without_a_private_wiki_path():
+    inferred = infer_task("Design an inference scheduler")
+    assert "inference" in inferred.request.tags

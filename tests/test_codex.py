@@ -28,7 +28,7 @@ def test_keyword_flag_is_not_presented_as_trusted_category():
     assert plan.model == CodexModel.SOL
 
 
-def test_wiki_context_is_targeted_and_delegation_requires_explicit_workstreams():
+def test_delegation_requires_explicit_workstreams():
     plan = plan_codex(
         TaskRequest(
             prompt="design the serving path",
@@ -39,11 +39,6 @@ def test_wiki_context_is_targeted_and_delegation_requires_explicit_workstreams()
     )
     assert plan.workflow == Workflow.RESEARCH_DESIGN
     assert plan.suggest_delegation
-    assert plan.context_files == (
-        "~/wiki/index.md",
-        "~/wiki/foundations/ai-systems-foundations.md",
-        "~/wiki/foundations/inference-memory-and-compute.md",
-    )
 
 
 def test_unrecognized_task_defaults_to_sol_medium():
