@@ -50,6 +50,8 @@ CATEGORY_TIER: dict[str, TaskTier] = {
     "coding_simple": TaskTier.MODERATE,
     "coding_complex": TaskTier.COMPLEX,
     "architecture": TaskTier.COMPLEX,
+    "research": TaskTier.COMPLEX,
+    "design": TaskTier.COMPLEX,
     "debugging_hard": TaskTier.COMPLEX,
     "long_horizon_agentic": TaskTier.COMPLEX,
     "code_review": TaskTier.COMPLEX,
