@@ -55,7 +55,9 @@ def _workflow(category: str | None, tier: TaskTier) -> Workflow:
         return Workflow.RESEARCH_DESIGN
     if normalized in _INVESTIGATE_CATEGORIES:
         return Workflow.INVESTIGATE_VERIFY
-    if tier == TaskTier.TRIVIAL and normalized not in {"coding_simple", "coding_complex"}:
+    if normalized in {"", "chat", "summarization"} or (
+        tier == TaskTier.TRIVIAL and normalized not in {"coding_simple", "coding_complex"}
+    ):
         return Workflow.DIRECT
     return Workflow.IMPLEMENT_VERIFY
 

@@ -11,6 +11,10 @@ from model_router import CodexModel, RoutingSource, Workflow, infer_task, plan_c
         ("Fix the typo in the README", "coding_simple", CodexModel.SOL, "medium"),
         ("Design the model serving scheduler", "architecture", CodexModel.SOL, "high"),
         ("Build distributed job recovery", "coding_complex", CodexModel.SOL, "high"),
+        ("Refactor this service's dependency injection", "coding_complex", CodexModel.SOL, "high"),
+        ("Review this PR end to end", "code_review", CodexModel.SOL, "high"),
+        ("Chat: help me draft a Slack message about a schedule change", "chat", CodexModel.SOL, "medium"),
+        ("Summarize this postmortem", "summarization", CodexModel.SOL, "medium"),
         ("Review payment authentication", "security_review", CodexModel.SOL, "high"),
         ("Can you help with this?", None, CodexModel.SOL, "medium"),
     ],
@@ -38,3 +42,8 @@ def test_full_prompt_still_triggers_existing_security_flag():
 def test_ai_topic_is_available_to_caller_without_a_private_wiki_path():
     inferred = infer_task("Design an inference scheduler")
     assert "inference" in inferred.request.tags
+
+
+def test_communication_task_uses_direct_workflow():
+    plan = plan_codex(infer_task("Draft a status email to the team").request)
+    assert plan.workflow == Workflow.DIRECT

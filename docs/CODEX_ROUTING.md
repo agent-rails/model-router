@@ -20,7 +20,7 @@ Luna/high for narrow work, Sol/medium as the general starting point, Sol/high
 for complex work and review. These are recommendations, not measured optimal
 settings for this repository. Astra and newer Sol variants are not automatic
 defaults because account availability and task quality must be checked first.
-Unknown categories default to Sol/medium. A trusted security category or tag
+Unknown categories default to Sol/medium with a direct workflow. A trusted security category or tag
 uses Sol/high. A prompt keyword can only raise the tier and is reported as
 `keyword_flagged`, because free text is not a trusted security label.
 
@@ -32,6 +32,12 @@ its existing safety keywords and length limits. Inferred categories carry
 `metadata_trusted=False`, so a security inference is `keyword_flagged`, never a
 trusted override. This is a heuristic with no measured accuracy or savings yet.
 Explicit caller categories remain available and take precedence at the CLI.
+
+The router's own example tasks exposed two rule errors: a service refactor was
+classed as routine coding, and a Slack message about a schedule change as
+coding. The intent order now handles review/communication first and treats
+refactors as complex. This example set is illustrative, not a held-out accuracy
+evaluation.
 
 Workflow labels convey a small execution contract: direct, implement and
 verify, investigate and verify, or research and design. Delegation is suggested
