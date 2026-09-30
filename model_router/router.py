@@ -34,12 +34,14 @@ def _normalize_prompt(prompt: str) -> str:
 
 def _override_reason(task: TaskRequest) -> tuple[str, RoutingSource] | None:
     if task.category is not None and _normalize_identifier(task.category) in OVERRIDE_CATEGORIES:
-        return f"category '{task.category}' is security-critical", RoutingSource.OVERRIDE
+        source = RoutingSource.OVERRIDE if task.metadata_trusted else RoutingSource.KEYWORD_FLAGGED
+        return f"category '{task.category}' is security-critical", source
 
     normalized_tags = {_normalize_identifier(tag) for tag in task.tags}
     hit_tags = normalized_tags & OVERRIDE_CATEGORIES
     if hit_tags:
-        return f"tag(s) {sorted(hit_tags)} are security-critical", RoutingSource.OVERRIDE
+        source = RoutingSource.OVERRIDE if task.metadata_trusted else RoutingSource.KEYWORD_FLAGGED
+        return f"tag(s) {sorted(hit_tags)} are security-critical", source
 
     normalized_prompt = _normalize_prompt(task.prompt)
     for keyword in OVERRIDE_KEYWORDS:

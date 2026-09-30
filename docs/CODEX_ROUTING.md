@@ -8,7 +8,7 @@ permissions, success criteria, and verification.
 ## Mechanism and ownership
 
 ```text
-caller declares task category, tags, workstreams
+task text -> conservative inferred category, or caller-declared category/tags
   -> model-router: safety floor, tier, workflow, qualified local eligibility
   -> provider adapter: explicit Codex model/effort or Ollama model
   -> caller: objective check and acceptance decision
@@ -23,6 +23,15 @@ defaults because account availability and task quality must be checked first.
 Unknown categories default to Sol/medium. A trusted security category or tag
 uses Sol/high. A prompt keyword can only raise the tier and is reported as
 `keyword_flagged`, because free text is not a trusted security label.
+
+`infer_task()` classifies the leading instruction with local, versioned rules;
+it makes no model call. Narrow transformations can reach Luna, while unknown
+intent stays on Sol/medium. Design, research, debugging, complex implementation,
+and security signals use Sol/high. The router still checks the full prompt for
+its existing safety keywords and length limits. Inferred categories carry
+`metadata_trusted=False`, so a security inference is `keyword_flagged`, never a
+trusted override. This is a heuristic with no measured accuracy or savings yet.
+Explicit caller categories remain available and take precedence at the CLI.
 
 Workflow labels convey a small execution contract: direct, implement and
 verify, investigate and verify, or research and design. Delegation is suggested
@@ -67,8 +76,9 @@ For the next evaluation, collect a small matched set of real tasks with
 category, chosen route, actual model, cached/uncached input, output, latency,
 validation result, retries and any human correction. Compare the current
 workflow with the proposed policy at equal quality thresholds. Pin/version the
-policy and qualification records. Keep any classifier or Jev suggestion in
-shadow mode until deterministic routing has a measured failure mode it can fix.
+policy and qualification records. Evaluate this rule classifier against labeled
+tasks before expanding its cheap route; keep any model-based classifier or Jev
+suggestion in shadow mode until a measured failure mode justifies it.
 
 Related shared knowledge: `~/wiki/designs/codex-cost-aware-harness.md` and
 `~/wiki/designs/ai-component-build-priorities.md`.

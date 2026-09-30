@@ -36,7 +36,7 @@ This is the efficiency lever: try cheap first, pay for the expensive retry only 
 
 ## Trust boundary
 
-The one thing that should never be true of this router: a heuristic guess quietly overriding an explicit caller decision. Category is caller-declared and always wins. Keyword flagging never *downgrades* anything — it only ever pushes toward the safe (expensive) side. If you know your task type, declare `category` — the fallback path exists for callers that don't, not as the primary mechanism.
+The one thing that should never be true of this router: a heuristic guess quietly overriding an explicit caller decision. A caller-declared category wins at the CLI. `infer_task()` can supply a category only when the caller has none, and marks it untrusted so security matches keep `KEYWORD_FLAGGED` provenance. Keyword flagging never *downgrades* anything — it only ever pushes toward the safe (expensive) side. If you know your task type, declare `category` — the fallback path exists for callers that don't.
 
 ## Observability
 
