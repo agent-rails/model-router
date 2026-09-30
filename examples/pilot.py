@@ -68,7 +68,8 @@ def main() -> None:
     print()
     print(f"estimated cost, routed:        ${routed_cost:.5f}")
     print(f"estimated cost, all-Opus baseline: ${baseline_cost:.5f}")
-    print(f"estimated savings: {(1 - routed_cost / baseline_cost) * 100:.1f}%")
+    print(f"illustrative routing-only savings: {(1 - routed_cost / baseline_cost) * 100:.1f}%")
+    print("excludes classifier, retries, validation, quality, and subscription accounting")
 
 
 if __name__ == "__main__":

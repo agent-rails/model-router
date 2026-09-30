@@ -36,9 +36,9 @@ Explicit caller categories remain available and take precedence at the CLI.
 Workflow labels convey a small execution contract: direct, implement and
 verify, investigate and verify, or research and design. Delegation is suggested
 only when a caller declares two or more independent workstreams, and remains
-optional. AI-system tags return two discovery pages plus at most one relevant
-wiki page; the caller reads only what the task needs. No wiki text is injected
-automatically.
+optional. Inferred AI-system tags are returned to the caller. The caller owns
+project knowledge discovery; the library no longer returns paths into its
+author's workstation wiki.
 
 ## Local model qualification
 
@@ -80,5 +80,4 @@ policy and qualification records. Evaluate this rule classifier against labeled
 tasks before expanding its cheap route; keep any model-based classifier or Jev
 suggestion in shadow mode until a measured failure mode justifies it.
 
-Related shared knowledge: `~/wiki/designs/codex-cost-aware-harness.md` and
-`~/wiki/designs/ai-component-build-priorities.md`.
+Project-specific knowledge and routing evaluation belong with the caller.

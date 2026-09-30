@@ -2,7 +2,8 @@
 
 ## What this project has
 
-- `model_router/router.py` — the classifier: `classify(task) -> RoutingDecision`. Hard override → heuristic tier → signal bumps.
+- `model_router/inference.py` — conservative task-start category inference when the caller has no declared category.
+- `model_router/router.py` — category-to-tier routing: hard override → heuristic tier → signal bumps.
 - `model_router/cascade.py` — optional cheap-first/retry-on-failure escalation: `route_with_cascade(...)`.
 - `model_router/telemetry.py` + `model_router/sinks.py` — observability hook (`RoutingEvent`, `InMemorySink`, `JsonlSink`) so routing decisions are auditable.
 - `model_router/config.py` — the tunable surface: `OVERRIDE_CATEGORIES`, `OVERRIDE_KEYWORDS`, `CATEGORY_TIER`, `TIER_ROUTE`, `ESCALATION_PATH`. Most contributions that change routing *behavior* rather than *code* live here.
@@ -30,4 +31,4 @@ All three must be clean. New behavior needs a regression test — a happy-path t
 
 ## The one rule that matters most
 
-Read `docs/DESIGN.md` § Trust boundary before touching `_override_reason` or `OVERRIDE_CATEGORIES`/`OVERRIDE_KEYWORDS`. Caller-declared `category`/`tag` is the trusted path (`RoutingSource.OVERRIDE`) and must never be weakened. Prompt-text keyword matching is deliberately untrusted (`RoutingSource.KEYWORD_FLAGGED`) and must never be promoted to equal authority with the trusted path — see `docs/THREAT_MODEL.md` § 1–2 for why that distinction exists and what it costs.
+Read `docs/DESIGN.md` § Trust boundary before touching `_override_reason` or `OVERRIDE_CATEGORIES`/`OVERRIDE_KEYWORDS`. Caller-declared `category`/`tag` is the trusted path (`RoutingSource.OVERRIDE`). Inferred metadata and prompt-text keyword matching are untrusted (`RoutingSource.KEYWORD_FLAGGED` for security matches) and must never be promoted to equal authority with the trusted path — see `docs/THREAT_MODEL.md` § 1–2 for why that distinction exists and what it costs.
