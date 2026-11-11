@@ -40,9 +40,11 @@ SUBAGENT_CATEGORY: dict[str, str] = {
     "caveman:cavecrew-investigator": "extraction",
     "caveman:cavecrew-builder": "coding_simple",
     "caveman:cavecrew-reviewer": "coding_simple",
+    "web-fetch": "extraction",
 }
 
 SUBAGENT_OVERRIDE_TAGS: dict[str, frozenset[str]] = {
+    "bounty-researcher": frozenset({"security_review"}),
     "data": frozenset({"security_review"}),
     "sentinel": frozenset({"security_review"}),
     "spock": frozenset({"security_review"}),
