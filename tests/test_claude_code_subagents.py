@@ -26,6 +26,16 @@ def test_security_subagent_forces_opus_override():
     assert decision.source == RoutingSource.OVERRIDE
 
 
+def test_bounty_researcher_forces_opus_override():
+    decision = classify(task_for_subagent("bounty-researcher", "reproduce this candidate locally"))
+    assert decision.model == Model.OPUS
+    assert decision.source == RoutingSource.OVERRIDE
+
+
+def test_web_fetch_maps_to_extraction():
+    assert task_for_subagent("web-fetch", "summarise this page").category == "extraction"
+
+
 def test_unknown_subagent_falls_back_to_no_category():
     task = task_for_subagent("some-future-agent", "do a thing")
     assert task.category is None
