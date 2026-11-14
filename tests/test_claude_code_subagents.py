@@ -16,7 +16,7 @@ from model_router.sinks import event_to_json
 
 def test_known_subagent_maps_to_expected_category():
     task = task_for_subagent("implementer", "add a retry loop to this client")
-    assert task.category == "coding_complex"
+    assert task.category == "coding_simple"
 
 
 def test_security_subagent_forces_opus_override():
@@ -158,3 +158,35 @@ def test_a_slice_of_only_escalations_declines_to_report_shares():
 
     assert summary["dispatches"] == 0
     assert "fallback_share" not in summary
+
+
+def test_complex_instruction_raises_implementer_to_opus():
+    task = task_for_subagent("implementer", "refactor the session store across services")
+    assert task.category == "coding_complex"
+    assert classify(task).model == Model.OPUS
+
+
+def test_investigation_instruction_raises_general_purpose():
+    assert task_for_subagent("general-purpose", "debug why the CI job is failing").category == "debugging_hard"
+
+
+def test_inference_never_lowers_the_agent_default():
+    assert task_for_subagent("general-purpose", "extract the title from this page").category == "chat"
+    assert task_for_subagent("architect", "summarise this design").category == "architecture"
+
+
+def test_security_inference_does_not_become_a_category():
+    assert task_for_subagent("general-purpose", "delete the temp branch").category == "chat"
+
+
+def test_unmapped_agent_can_be_raised_from_the_moderate_default():
+    assert task_for_subagent("some-future-agent", "design the queue topology").category == "architecture"
+
+
+def test_caller_category_disables_inference():
+    assert task_for_subagent("implementer", "refactor everything", category="coding_simple").category == "coding_simple"
+
+
+def test_non_complex_inference_does_not_raise():
+    assert task_for_subagent("web-fetch", "summarise this page").category == "extraction"
+    assert task_for_subagent("voltage-scribe", "add today's triage to the log").category == "summarization"

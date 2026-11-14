@@ -7,16 +7,19 @@ from model_router import (
     JsonlSink,
     RoutingDecision,
     TaskRequest,
+    TaskTier,
     classify,
+    infer_task,
     is_recognized_category,
 )
+from model_router.config import CATEGORY_TIER, OVERRIDE_CATEGORIES
 from model_router.telemetry import EmitFn
 
 SUBAGENT_CATEGORY: dict[str, str] = {
     "Explore": "data_analysis",
     "general-purpose": "chat",
     "claude": "chat",
-    "implementer": "coding_complex",
+    "implementer": "coding_simple",
     "debugger": "debugging_hard",
     "tester": "coding_simple",
     "researcher": "data_analysis",
@@ -54,10 +57,29 @@ SUBAGENT_OVERRIDE_TAGS: dict[str, frozenset[str]] = {
 SUBAGENT_IS_AGENTIC: frozenset[str] = frozenset({"orchestrator"})
 
 
+def raise_category_from_prompt(default: str | None, prompt: str) -> str | None:
+    """Let the task's own instruction promote the agent to the complex tier, never lower it.
+
+    The subagent name is a prior on difficulty, not a measurement: "implementer"
+    covers both a one-line rename and a cross-service migration. infer_task reads
+    the leading instruction for that signal. Only a complex inference counts:
+    verbs like "summarise" or "add" name an action, not its difficulty, and
+    letting them lift a Haiku-tier fetch to Sonnet spends money on no signal.
+    A security inference is ignored here
+    because the router's keyword scan already owns free-text risk, and promoting
+    it to a category would turn an untrusted guess into a trusted override.
+    """
+    inferred = infer_task(prompt).request.category
+    if inferred is None or inferred in OVERRIDE_CATEGORIES or CATEGORY_TIER[inferred] != TaskTier.COMPLEX:
+        return default
+    return default if default and CATEGORY_TIER.get(default) == TaskTier.COMPLEX else inferred
+
+
 def task_for_subagent(subagent_type: str, prompt: str, **overrides: object) -> TaskRequest:
+    default = SUBAGENT_CATEGORY.get(subagent_type)
     fields: dict[str, object] = {
         "prompt": prompt,
-        "category": SUBAGENT_CATEGORY.get(subagent_type),
+        "category": default if "category" in overrides else raise_category_from_prompt(default, prompt),
         "tags": SUBAGENT_OVERRIDE_TAGS.get(subagent_type, frozenset()),
         "is_agentic": subagent_type in SUBAGENT_IS_AGENTIC,
     }
