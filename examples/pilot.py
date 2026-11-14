@@ -3,7 +3,8 @@ from __future__ import annotations
 from collections import Counter
 
 from model_router import InMemorySink, TaskRequest, classify
-from model_router.models import PRICING_PER_MTOK, Model
+from model_router.models import Model
+from model_router.models import estimate_cost_usd as estimate_tokens_cost_usd
 
 PILOT_TASKS: list[TaskRequest] = [
     TaskRequest(prompt="Classify this support ticket as billing/technical/other.", category="classification"),
@@ -38,9 +39,7 @@ ASSUMED_OUTPUT_TOKENS = 500
 
 
 def estimate_cost_usd(model, prompt_chars: int) -> float:
-    input_price, output_price = PRICING_PER_MTOK[model]
-    input_tokens = prompt_chars / CHARS_PER_TOKEN_ESTIMATE
-    return (input_tokens / 1_000_000) * input_price + (ASSUMED_OUTPUT_TOKENS / 1_000_000) * output_price
+    return estimate_tokens_cost_usd(model, prompt_chars // CHARS_PER_TOKEN_ESTIMATE, ASSUMED_OUTPUT_TOKENS)
 
 
 def main() -> None:
