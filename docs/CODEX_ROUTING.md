@@ -25,7 +25,11 @@ uses Sol/high. A prompt keyword can only raise the tier and is reported as
 `keyword_flagged`, because free text is not a trusted security label.
 
 `infer_task()` classifies the leading instruction with local, versioned rules;
-it makes no model call. Narrow transformations can reach Luna, while unknown
+it makes no model call. Risk is the exception: high-precision security-asset
+terms (credentials, IAM, RBAC, OIDC, JWT, kubeconfig, access tokens) are matched
+anywhere in the NFKC-normalised prompt, while broad action words such as
+"delete" or "production" count only in the lead. Lookalike characters from other
+scripts are not folded, so the scan stays evadable by design (THREAT_MODEL §1). Narrow transformations can reach Luna, while unknown
 intent stays on Sol/medium. Design, research, debugging, complex implementation,
 and security signals use Sol/high. The router still checks the full prompt for
 its existing safety keywords and length limits. Inferred categories carry

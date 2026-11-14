@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from dataclasses import dataclass
 
 from model_router.types import TaskRequest
@@ -15,9 +16,20 @@ class TaskInference:
 
 
 _RISK = re.compile(
-    r"\b(auth(?:entication|orization)?|security|secrets?|credentials?|api keys?|"
-    r"payments?|funds|kyc|pii|production|prod deploy|irreversible|"
-    r"delete|drop table|force push)\b",
+    r"\b(auth(?:entication|orization|n|z)?|security|secrets?|credentials?|api keys?|"
+    r"payments?|funds|kyc|pii|production|prod|prod deploy|irreversible|"
+    r"delete|drop table|force push|iam|rbac|oidc|oauth|jwt|tls|mtls|ssl|kubeconfig|"
+    r"sudo|privileges?|permissions?|security groups?|(?:access|auth|bearer|refresh|api|session) tokens?)\b",
+    re.IGNORECASE,
+)
+# Checked across the whole prompt, not just the lead. Only terms that name a
+# security asset qualify: broad action words such as "delete" or "production"
+# appear in routine instructions ("do not delete files") and would send nearly
+# every multi-line prompt to the top tier.
+_RISK_ANYWHERE = re.compile(
+    r"\b(authentication|authorization|authn|authz|credentials?|secrets? (?:manager|store|key)|"
+    r"api keys?|private keys?|(?:access|bearer|refresh|session) tokens?|iam|rbac|oidc|oauth|jwt|"
+    r"kubeconfig|kyc|pii)\b",
     re.IGNORECASE,
 )
 _RESEARCH = re.compile(r"\b(research|investigate|evaluate|compare|survey)\b", re.IGNORECASE)
@@ -48,14 +60,20 @@ _AI_TOPICS = (
 def infer_task(prompt: str) -> TaskInference:
     """Infer a task-start route; unknown or mixed intent stays on Sol.
 
-    Only the leading instruction is classified. The full prompt still reaches
-    the router's conservative risk-keyword and length checks. Inferred metadata
+    Intent is classified from the leading instruction. Risk is checked twice:
+    broad risk terms in the lead, and high-precision security-asset terms
+    (credentials, IAM, JWT, kubeconfig, ...) anywhere in the NFKC-normalised
+    prompt. The full prompt still reaches the router's conservative
+    risk-keyword and length checks. Inferred metadata
     is untrusted, so it never masquerades as a caller-declared security override.
     """
-    lead = prompt.strip().splitlines()[0][:240] if prompt.strip() else ""
+    normalized = unicodedata.normalize("NFKC", prompt)
+    lead = normalized.strip().splitlines()[0][:240] if normalized.strip() else ""
     tags = frozenset(topic for pattern, topic in _AI_TOPICS if pattern.search(lead))
     if _RISK.search(lead):
         category, rule = "security_review", "risk term in leading instruction"
+    elif _RISK_ANYWHERE.search(normalized):
+        category, rule = "security_review", "security asset named in prompt body"
     elif _REVIEW.search(lead):
         category, rule = "code_review", "review intent"
     elif _DEBUG.search(lead):
