@@ -211,3 +211,14 @@ def test_security_agent_keeps_trusted_override_source_with_risk_words():
 def test_implementer_security_work_outside_the_risk_regex_stays_on_opus():
     for prompt in ("rotate the IAM role for prod", "tighten RBAC on the authz service", "fix the jwt signature check"):
         assert classify(task_for_subagent("implementer", prompt)).model == Model.OPUS, prompt
+
+
+def test_identity_terms_route_every_non_security_agent_to_opus():
+    for agent in ("implementer", "general-purpose", "tester", "voltage-scribe"):
+        for prompt in (
+            "fix IAM policy",
+            "fix authn/authz flow",
+            "rotate the bearer token",
+            "update the OIDC trust policy",
+        ):
+            assert classify(task_for_subagent(agent, prompt)).model == Model.OPUS, (agent, prompt)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from dataclasses import dataclass
 
 from model_router.types import TaskRequest
@@ -14,12 +15,48 @@ class TaskInference:
     rule: str
 
 
+# Boundaries exclude letters and digits only, so snake_case identifiers such as
+# api_key or auth_token match; `\b` treats `_` as a word character and missed them.
+_B, _E = r"(?<![A-Za-z0-9])(?:", r")(?![A-Za-z0-9])"
+_SEP = r"[ _-]?"
+
 _RISK = re.compile(
-    r"\b(auth(?:entication|orization)?|security|secrets?|credentials?|api keys?|"
-    r"payments?|funds|kyc|pii|production|prod deploy|irreversible|"
-    r"delete|drop table|force push)\b",
+    _B + r"auth(?:entications?|orizations?|n|z)?|security|secrets?|credentials?|"
+    rf"api{_SEP}keys?|passwords?|passphrases?|mfa|2fa|ssh{_SEP}keys?|"
+    r"certificates?|certs?|payments?|funds|kyc|pii|production|prod|prod deploy|irreversible|"
+    r"delete|drop table|force push|iam|rbac|oidc|oauth|jwt|tls|mtls|ssl|kubeconfig|"
+    rf"sudo|sudoers|privileges?|permissions?|security groups?|service{_SEP}accounts?|"
+    rf"(?:(?:access|auth|bearer|refresh|api|session){_SEP})?tokens?" + _E,
     re.IGNORECASE,
 )
+# Checked across the whole prompt, not just the lead. Only terms that name a
+# security asset qualify: broad action words such as "delete" or "production"
+# appear in routine instructions ("do not delete files") and would send nearly
+# every multi-line prompt to the top tier. Bare "token" is lead-only for the
+# same reason: in a prompt body it usually means a token budget.
+_RISK_ANYWHERE = re.compile(
+    _B + r"authentication|authorization|authn|authz|credentials?|"
+    rf"secrets?{_SEP}(?:manager|store|key)|api{_SEP}keys?|private{_SEP}keys?|ssh{_SEP}keys?|"
+    rf"passwords?|passphrases?|mfa|(?:access|auth|bearer|refresh|session){_SEP}tokens?|"
+    rf"service{_SEP}account{_SEP}tokens?|aws_access_key_id|aws_secret_access_key|"
+    rf"tls{_SEP}cert(?:ificate)?s?|iam|rbac|oidc|oauth|jwt|kubeconfig|sudoers|"
+    r"admin privileges?|kyc|pii" + _E,
+    re.IGNORECASE,
+)
+
+
+def _normalise(prompt: str) -> str:
+    """NFKC-fold, then drop format and combining characters.
+
+    NFKC folds fullwidth and compatibility forms but keeps zero-width spaces,
+    joiners and soft hyphens (category Cf) and combining marks (Mn), any of
+    which can split a term ("i\u200bam"). Cross-script lookalikes are still not
+    folded; see THREAT_MODEL section 1.
+    """
+    folded = unicodedata.normalize("NFKD", unicodedata.normalize("NFKC", prompt))
+    return unicodedata.normalize("NFC", "".join(c for c in folded if unicodedata.category(c) not in {"Cf", "Mn"}))
+
+
 _RESEARCH = re.compile(r"\b(research|investigate|evaluate|compare|survey)\b", re.IGNORECASE)
 _DESIGN = re.compile(r"\b(design|architect|architecture|system design)\b", re.IGNORECASE)
 _COMPLEX = re.compile(
@@ -48,14 +85,20 @@ _AI_TOPICS = (
 def infer_task(prompt: str) -> TaskInference:
     """Infer a task-start route; unknown or mixed intent stays on Sol.
 
-    Only the leading instruction is classified. The full prompt still reaches
-    the router's conservative risk-keyword and length checks. Inferred metadata
+    Intent is classified from the leading instruction. Risk is checked twice:
+    broad risk terms in the lead, and high-precision security-asset terms
+    (credentials, IAM, JWT, kubeconfig, ...) anywhere in the normalised prompt
+    (NFKC, format and combining characters removed). The full prompt still reaches the router's conservative
+    risk-keyword and length checks. Inferred metadata
     is untrusted, so it never masquerades as a caller-declared security override.
     """
-    lead = prompt.strip().splitlines()[0][:240] if prompt.strip() else ""
+    normalized = _normalise(prompt)
+    lead = normalized.strip().splitlines()[0][:240] if normalized.strip() else ""
     tags = frozenset(topic for pattern, topic in _AI_TOPICS if pattern.search(lead))
     if _RISK.search(lead):
         category, rule = "security_review", "risk term in leading instruction"
+    elif _RISK_ANYWHERE.search(normalized):
+        category, rule = "security_review", "security asset named in prompt body"
     elif _REVIEW.search(lead):
         category, rule = "code_review", "review intent"
     elif _DEBUG.search(lead):
