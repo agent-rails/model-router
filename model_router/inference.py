@@ -26,21 +26,33 @@ _RISK = re.compile(
     r"certificates?|certs?|payments?|funds|kyc|pii|production|prod|prod deploy|irreversible|"
     r"delete|drop table|force push|iam|rbac|oidc|oauth|jwt|tls|mtls|ssl|kubeconfig|"
     rf"sudo|sudoers|privileges?|permissions?|security groups?|service{_SEP}accounts?|"
-    rf"(?:(?:access|auth|bearer|refresh|api|session){_SEP})?tokens?" + _E,
+    rf"(?:(?:access|auth|bearer|refresh|api|session){_SEP})?tokens?|"
+    r"signing keys?|gpg|pgp|encryption keys?|encrypt(?:ion|ed|s)?|decrypt(?:ion|ed|s)?|"
+    r"firewalls?|network polic(?:y|ies)|cves?|vulnerabilit(?:y|ies)|exploits?|"
+    r"(?:sql|command|code|prompt|ldap|xml|header) injections?|"
+    r"xss|csrf|ssrf|sandbox escapes?|purge|wipe|truncate|customer data(?:base)?|live data(?:base)?" + _E,
     re.IGNORECASE,
 )
 # Checked across the whole prompt, not just the lead. Only terms that name a
 # security asset qualify: broad action words such as "delete" or "production"
 # appear in routine instructions ("do not delete files") and would send nearly
 # every multi-line prompt to the top tier. Bare "token" is lead-only for the
-# same reason: in a prompt body it usually means a token budget.
+# same reason: in a prompt body it usually means a token budget. "security" and
+# "secret" count anywhere: they over-route guardrail text ("never print
+# secrets"), which is the accepted safe direction.
+#
+# This list is best-effort and will never be complete; see THREAT_MODEL section 1.
+# A caller that knows a task is security work should declare the category.
 _RISK_ANYWHERE = re.compile(
     _B + r"authentication|authorization|authn|authz|credentials?|"
     rf"secrets?{_SEP}(?:manager|store|key)|api{_SEP}keys?|private{_SEP}keys?|ssh{_SEP}keys?|"
     rf"passwords?|passphrases?|mfa|(?:access|auth|bearer|refresh|session){_SEP}tokens?|"
     rf"service{_SEP}account{_SEP}tokens?|aws_access_key_id|aws_secret_access_key|"
     rf"tls{_SEP}cert(?:ificate)?s?|iam|rbac|oidc|oauth|jwt|kubeconfig|sudoers|"
-    r"admin privileges?|kyc|pii" + _E,
+    r"admin privileges?|kyc|pii|security|secrets?|signing keys?|gpg|pgp|encryption keys?|encrypt(?:ion|ed|s)?|"
+    r"firewalls?|network polic(?:y|ies)|cves?|vulnerabilit(?:y|ies)|exploits?|"
+    r"(?:sql|command|code|prompt|ldap|xml|header) injections?|xss|csrf|ssrf|sandbox escapes?|"
+    r"(?:customer|production|live) (?:data|database|db)" + _E,
     re.IGNORECASE,
 )
 
