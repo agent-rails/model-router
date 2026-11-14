@@ -33,7 +33,12 @@ on NFKC-folded text with zero-width, soft-hyphen and combining characters remove
 and treats `_` as a separator so `api_key` matches. Lookalike characters from
 other scripts are not folded, so the scan stays evadable by design
 (THREAT_MODEL §1). Over-routing from guardrail text ("never include credentials")
-is accepted as the safe direction. Narrow transformations can reach Luna, while unknown
+is accepted as the safe direction.
+
+The vocabulary is best-effort and will never cover all security work. Each
+review pass that probed it found phrasings it missed, so detection is defence in
+depth, not the control. A caller that knows a task is security work should
+declare a security category or tag, which routes as a trusted override. Narrow transformations can reach Luna, while unknown
 intent stays on Sol/medium. Design, research, debugging, complex implementation,
 and security signals use Sol/high. The router still checks the full prompt for
 its existing safety keywords and length limits. Inferred categories carry

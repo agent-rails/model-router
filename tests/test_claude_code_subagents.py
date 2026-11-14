@@ -1,3 +1,4 @@
+import pytest
 from claude_code_subagents import (
     calibration_summary,
     decision_for_subagent,
@@ -222,3 +223,26 @@ def test_identity_terms_route_every_non_security_agent_to_opus():
             "update the OIDC trust policy",
         ):
             assert classify(task_for_subagent(agent, prompt)).model == Model.OPUS, (agent, prompt)
+
+
+OUT_OF_VOCABULARY_SECURITY_PROMPTS = (
+    "Rotate the signing key",
+    "Tighten the firewall rules",
+    "Patch the CVE-2025-1234 vulnerability",
+    "Fix the SQL injection",
+    "Fix the XSS and CSRF",
+    "Purge the live customer database",
+    "Update the network policy",
+    "Encrypt the backups",
+    "Fix the sandbox escape",
+    "Rotate the GPG key",
+    "Change security handling",
+    "Rotate the webhook secret",
+)
+
+
+@pytest.mark.parametrize("agent", ["general-purpose", "tester", "voltage-scribe", "implementer"])
+@pytest.mark.parametrize("prompt", OUT_OF_VOCABULARY_SECURITY_PROMPTS)
+def test_security_work_routes_to_opus_as_lead_or_body(agent, prompt):
+    for text in (prompt, f"Update the task.\n{prompt}"):
+        assert classify(task_for_subagent(agent, text)).model == Model.OPUS, (agent, text)

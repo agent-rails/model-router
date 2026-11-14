@@ -137,3 +137,10 @@ def test_invisible_characters_do_not_split_risk_terms(prompt):
 @pytest.mark.parametrize("prompt", ["William reviewed the product roadmap", "Summarise the authority matrix"])
 def test_word_boundaries_hold(prompt):
     assert infer_task(prompt).request.category != "security_review"
+
+
+@pytest.mark.parametrize(
+    "prompt", ["Refactor the dependency injection container", "Summarise.\nUses constructor injection."]
+)
+def test_non_security_injection_is_not_risk(prompt):
+    assert infer_task(prompt).request.category != "security_review"
