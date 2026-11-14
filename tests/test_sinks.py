@@ -8,7 +8,7 @@ def test_jsonl_sink_writes_and_reads_back_events(tmp_path):
 
     records = sink.read_all()
     assert len(records) == 2
-    assert records[0]["decision"]["model"] == "claude-haiku-4-5"
+    assert records[0]["decision"]["model"] == "claude-haiku-5-5"
     assert records[0]["category"] == "classification"
     assert records[1]["decision"]["source"] == "override"
 

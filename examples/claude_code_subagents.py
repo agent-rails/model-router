@@ -7,9 +7,12 @@ from model_router import (
     JsonlSink,
     RoutingDecision,
     TaskRequest,
+    TaskTier,
     classify,
+    infer_task,
     is_recognized_category,
 )
+from model_router.config import CATEGORY_TIER, OVERRIDE_CATEGORIES
 from model_router.telemetry import EmitFn
 
 SUBAGENT_CATEGORY: dict[str, str] = {
@@ -54,12 +57,40 @@ SUBAGENT_OVERRIDE_TAGS: dict[str, frozenset[str]] = {
 SUBAGENT_IS_AGENTIC: frozenset[str] = frozenset({"orchestrator"})
 
 
+def infer_category(default: str | None, prompt: str) -> tuple[str | None, bool]:
+    """Return (category, metadata_trusted) after letting the task's instruction raise the agent default.
+
+    The subagent name is a prior on difficulty, not a measurement: "implementer"
+    covers both a one-line rename and a cross-service migration. infer_task reads
+    the leading instruction for that signal and may only raise the route:
+
+    - a risk inference (auth, secrets, credentials, production, ...) becomes the
+      security_review category marked untrusted, so it routes to Opus with
+      KEYWORD_FLAGGED provenance rather than masquerading as a trusted override;
+    - a complex inference promotes a non-complex default to complex;
+    - anything else keeps the default. Verbs like "summarise" or "add" name an
+      action, not its difficulty, and must not lift a Haiku-tier fetch to Sonnet.
+    """
+    inferred = infer_task(prompt).request.category
+    if inferred in OVERRIDE_CATEGORIES:
+        return inferred, False
+    if inferred is None or CATEGORY_TIER[inferred] != TaskTier.COMPLEX:
+        return default, True
+    if default and CATEGORY_TIER.get(default) == TaskTier.COMPLEX:
+        return default, True
+    return inferred, True
+
+
 def task_for_subagent(subagent_type: str, prompt: str, **overrides: object) -> TaskRequest:
+    tags = SUBAGENT_OVERRIDE_TAGS.get(subagent_type, frozenset())
+    default = SUBAGENT_CATEGORY.get(subagent_type)
+    category, trusted = (default, True) if "category" in overrides or tags else infer_category(default, prompt)
     fields: dict[str, object] = {
         "prompt": prompt,
-        "category": SUBAGENT_CATEGORY.get(subagent_type),
-        "tags": SUBAGENT_OVERRIDE_TAGS.get(subagent_type, frozenset()),
+        "category": category,
+        "tags": tags,
         "is_agentic": subagent_type in SUBAGENT_IS_AGENTIC,
+        "metadata_trusted": trusted,
     }
     fields.update(overrides)
     return TaskRequest(**fields)

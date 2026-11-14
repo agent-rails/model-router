@@ -158,3 +158,56 @@ def test_a_slice_of_only_escalations_declines_to_report_shares():
 
     assert summary["dispatches"] == 0
     assert "fallback_share" not in summary
+
+
+def test_complex_instruction_raises_tester_to_opus():
+    task = task_for_subagent("tester", "refactor the session store across services")
+    assert task.category == "coding_complex"
+    assert classify(task).model == Model.OPUS
+
+
+def test_investigation_instruction_raises_general_purpose():
+    assert task_for_subagent("general-purpose", "debug why the CI job is failing").category == "debugging_hard"
+
+
+def test_inference_never_lowers_the_agent_default():
+    assert task_for_subagent("general-purpose", "extract the title from this page").category == "chat"
+    assert task_for_subagent("architect", "summarise this design").category == "architecture"
+
+
+def test_unmapped_agent_can_be_raised_from_the_moderate_default():
+    assert task_for_subagent("some-future-agent", "design the queue topology").category == "architecture"
+
+
+def test_caller_category_disables_inference():
+    assert task_for_subagent("tester", "refactor everything", category="coding_simple").category == "coding_simple"
+
+
+def test_non_complex_inference_does_not_raise():
+    assert task_for_subagent("web-fetch", "summarise this page").category == "extraction"
+    assert task_for_subagent("voltage-scribe", "add today's triage to the log").category == "summarization"
+
+
+def test_risk_word_never_lowers_implementer_below_opus():
+    for prompt in (
+        "refactor the authentication module across services",
+        "fix the authentication bypass in the login hook",
+        "add secret redaction to the credentials loader",
+    ):
+        assert classify(task_for_subagent("implementer", prompt)).model == Model.OPUS, prompt
+
+
+def test_risk_inference_is_untrusted_but_routes_opus():
+    decision = classify(task_for_subagent("general-purpose", "rotate the credentials for the staging db"))
+    assert decision.model == Model.OPUS
+    assert decision.source == RoutingSource.KEYWORD_FLAGGED
+
+
+def test_security_agent_keeps_trusted_override_source_with_risk_words():
+    decision = classify(task_for_subagent("spock", "review the auth change"))
+    assert decision.source == RoutingSource.OVERRIDE
+
+
+def test_implementer_security_work_outside_the_risk_regex_stays_on_opus():
+    for prompt in ("rotate the IAM role for prod", "tighten RBAC on the authz service", "fix the jwt signature check"):
+        assert classify(task_for_subagent("implementer", prompt)).model == Model.OPUS, prompt

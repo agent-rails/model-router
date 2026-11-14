@@ -1,4 +1,6 @@
-from model_router import Effort, Model, RoutingSource, TaskRequest, TaskTier, classify
+import pytest
+
+from model_router import Effort, Model, RoutingSource, TaskRequest, TaskTier, classify, estimate_cost_usd
 
 
 def test_known_category_maps_to_trivial_tier():
@@ -123,3 +125,8 @@ def test_keyword_scan_matches_hyphen_and_underscore_variants():
 def test_keyword_scan_matches_underscore_variant_of_multiword_keyword():
     decision = classify(TaskRequest(prompt="need a fresh api_key for this integration"))
     assert decision.source == RoutingSource.KEYWORD_FLAGGED
+
+
+def test_estimate_cost_usd_uses_per_mtok_pricing():
+    assert estimate_cost_usd(Model.HAIKU, 1_000_000, 1_000_000) == pytest.approx(0.60)
+    assert estimate_cost_usd(Model.OPUS, 2_000, 500) == pytest.approx(0.018)
