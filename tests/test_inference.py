@@ -93,3 +93,47 @@ def test_broad_action_words_after_the_lead_are_not_risk(prompt):
 
 def test_fullwidth_risk_term_is_normalised():
     assert infer_task("Rotate the ＩＡＭ role").request.category == "security_review"
+
+
+@pytest.mark.parametrize(
+    "prompt",
+    [
+        "Rotate token",
+        "Rotate the password",
+        "Enable MFA for admins",
+        "Rotate the ssh key",
+        "Edit sudoers",
+        "Fix authentications",
+        "Fix the api_key loader",
+        "Handle auth_token expiry",
+        "Renew the TLS certificate",
+    ],
+)
+def test_more_lead_risk_terms(prompt):
+    assert infer_task(prompt).request.category == "security_review"
+
+
+@pytest.mark.parametrize(
+    "prompt",
+    [
+        "Summarize the session below.\npassword=hunter2",
+        "Summarize below.\nrotate the db password",
+        "Write the loader.\nIt reads AWS_ACCESS_KEY_ID from env.",
+        "Write the handler.\nMount the service account token.",
+        "Update the client.\nPin the TLS cert.",
+        "Fix the script.\nIt edits sudoers.",
+        "Write the policy.\nGrant admin privileges and disable MFA.",
+    ],
+)
+def test_more_body_risk_terms(prompt):
+    assert infer_task(prompt).request.category == "security_review"
+
+
+@pytest.mark.parametrize("prompt", ["Fix i\u200bam policy", "Fix the k‍ubeconfig", "Fix I­AM policy"])
+def test_invisible_characters_do_not_split_risk_terms(prompt):
+    assert infer_task(prompt).request.category == "security_review"
+
+
+@pytest.mark.parametrize("prompt", ["William reviewed the product roadmap", "Summarise the authority matrix"])
+def test_word_boundaries_hold(prompt):
+    assert infer_task(prompt).request.category != "security_review"
