@@ -175,10 +175,6 @@ def test_inference_never_lowers_the_agent_default():
     assert task_for_subagent("architect", "summarise this design").category == "architecture"
 
 
-def test_security_inference_does_not_become_a_category():
-    assert task_for_subagent("general-purpose", "delete the temp branch").category == "chat"
-
-
 def test_unmapped_agent_can_be_raised_from_the_moderate_default():
     assert task_for_subagent("some-future-agent", "design the queue topology").category == "architecture"
 
@@ -190,3 +186,23 @@ def test_caller_category_disables_inference():
 def test_non_complex_inference_does_not_raise():
     assert task_for_subagent("web-fetch", "summarise this page").category == "extraction"
     assert task_for_subagent("voltage-scribe", "add today's triage to the log").category == "summarization"
+
+
+def test_risk_word_never_lowers_implementer_below_opus():
+    for prompt in (
+        "refactor the authentication module across services",
+        "fix the authentication bypass in the login hook",
+        "add secret redaction to the credentials loader",
+    ):
+        assert classify(task_for_subagent("implementer", prompt)).model == Model.OPUS, prompt
+
+
+def test_risk_inference_is_untrusted_but_routes_opus():
+    decision = classify(task_for_subagent("general-purpose", "rotate the credentials for the staging db"))
+    assert decision.model == Model.OPUS
+    assert decision.source == RoutingSource.KEYWORD_FLAGGED
+
+
+def test_security_agent_keeps_trusted_override_source_with_risk_words():
+    decision = classify(task_for_subagent("spock", "review the auth change"))
+    assert decision.source == RoutingSource.OVERRIDE
