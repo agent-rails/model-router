@@ -30,8 +30,6 @@ OVERRIDE_KEYWORDS: frozenset[str] = frozenset(
         "drop table",
         "force push",
         "delete branch",
-        "agent guard",
-        "warrant",
         "compliance",
         "pii",
         "financial transaction",

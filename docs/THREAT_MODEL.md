@@ -4,11 +4,13 @@ Lightweight, proportional to what this library actually does: pick a model + eff
 
 ## 1. Keyword-scan evasion
 
-`KEYWORD_FLAGGED` is substring matching on normalized prompt text (casefolded, hyphens/underscores collapsed to spaces — so `agent-guard`, `agent_guard`, and `Agent Guard` all match the same entry). That closes the trivial punctuation/case evasion, but paraphrase, translation, or just not using the listed words evades it entirely. **This is expected, not a bug** — the keyword scan was never meant to be the trust boundary; category declaration is. Residual risk only materializes when a caller has a genuinely security-critical task *and* fails to declare `category` *and* the prompt happens to dodge every listed keyword. Mitigation: category declaration is the real control (see `DESIGN.md` § Trust boundary); treat the keyword path as defense-in-depth, not primary coverage. Audit exposure periodically via `InMemorySink.keyword_flagged()` (or the caller's own sink) to see what's slipping through unflagged.
+`KEYWORD_FLAGGED` is substring matching on normalized prompt text (casefolded, hyphens/underscores collapsed to spaces — so `force-push`, `force_push`, and `Force Push` all match the same entry). That closes the trivial punctuation/case evasion, but paraphrase, translation, or just not using the listed words evades it entirely. **This is expected, not a bug** — the keyword scan was never meant to be the trust boundary; category declaration is. Residual risk only materializes when a caller has a genuinely security-critical task *and* fails to declare `category` *and* the prompt happens to dodge every listed keyword. Mitigation: category declaration is the real control (see `DESIGN.md` § Trust boundary); treat the keyword path as defense-in-depth, not primary coverage. Audit exposure periodically via `InMemorySink.keyword_flagged()` (or the caller's own sink) to see what's slipping through unflagged.
 
 ## 2. Keyword-scan over-triggering
 
 The flip side of #1: common words ("production", "compliance") appear in plenty of unrelated prompts and force a Opus/high route that wasn't needed. Accepted as the correct failure direction — worst case is spending more than necessary, never under-protecting. If this becomes a real expense, the fix is pruning `OVERRIDE_KEYWORDS`, not weakening the override behavior itself. Monitor via the same sink.
+
+Pruned 2026-11-14: `agent guard` and `warrant` are project names in the reference caller's environment, not risk signals. Of 290 logged dispatches they flagged 30, routing summarisation and implementation work to Opus. The trusted `agent_guard` and `warrant` categories and tags still force the override.
 
 ## 3. Silent under-routing from an unrecognized category string
 

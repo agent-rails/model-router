@@ -116,8 +116,8 @@ def test_unrecognized_category_reason_differs_from_absent_category_reason():
 
 
 def test_keyword_scan_matches_hyphen_and_underscore_variants():
-    hyphen = classify(TaskRequest(prompt="review this agent-guard change"))
-    underscore = classify(TaskRequest(prompt="review this agent_guard change"))
+    hyphen = classify(TaskRequest(prompt="do not force-push this branch"))
+    underscore = classify(TaskRequest(prompt="do not force_push this branch"))
     assert hyphen.source == RoutingSource.KEYWORD_FLAGGED
     assert underscore.source == RoutingSource.KEYWORD_FLAGGED
 
@@ -130,3 +130,9 @@ def test_keyword_scan_matches_underscore_variant_of_multiword_keyword():
 def test_estimate_cost_usd_uses_per_mtok_pricing():
     assert estimate_cost_usd(Model.HAIKU, 1_000_000, 1_000_000) == pytest.approx(0.60)
     assert estimate_cost_usd(Model.OPUS, 2_000, 500) == pytest.approx(0.018)
+
+
+def test_project_names_in_free_text_do_not_flag():
+    decision = classify(TaskRequest(prompt="summarise the agent-guard warrant PR thread", category="summarization"))
+    assert decision.source == RoutingSource.HEURISTIC
+    assert decision.model == Model.SONNET
