@@ -16,7 +16,7 @@ from model_router.sinks import event_to_json
 
 def test_known_subagent_maps_to_expected_category():
     task = task_for_subagent("implementer", "add a retry loop to this client")
-    assert task.category == "coding_simple"
+    assert task.category == "coding_complex"
 
 
 def test_security_subagent_forces_opus_override():
@@ -160,8 +160,8 @@ def test_a_slice_of_only_escalations_declines_to_report_shares():
     assert "fallback_share" not in summary
 
 
-def test_complex_instruction_raises_implementer_to_opus():
-    task = task_for_subagent("implementer", "refactor the session store across services")
+def test_complex_instruction_raises_tester_to_opus():
+    task = task_for_subagent("tester", "refactor the session store across services")
     assert task.category == "coding_complex"
     assert classify(task).model == Model.OPUS
 
@@ -180,7 +180,7 @@ def test_unmapped_agent_can_be_raised_from_the_moderate_default():
 
 
 def test_caller_category_disables_inference():
-    assert task_for_subagent("implementer", "refactor everything", category="coding_simple").category == "coding_simple"
+    assert task_for_subagent("tester", "refactor everything", category="coding_simple").category == "coding_simple"
 
 
 def test_non_complex_inference_does_not_raise():
@@ -206,3 +206,8 @@ def test_risk_inference_is_untrusted_but_routes_opus():
 def test_security_agent_keeps_trusted_override_source_with_risk_words():
     decision = classify(task_for_subagent("spock", "review the auth change"))
     assert decision.source == RoutingSource.OVERRIDE
+
+
+def test_implementer_security_work_outside_the_risk_regex_stays_on_opus():
+    for prompt in ("rotate the IAM role for prod", "tighten RBAC on the authz service", "fix the jwt signature check"):
+        assert classify(task_for_subagent("implementer", prompt)).model == Model.OPUS, prompt

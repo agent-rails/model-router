@@ -19,7 +19,7 @@ SUBAGENT_CATEGORY: dict[str, str] = {
     "Explore": "data_analysis",
     "general-purpose": "chat",
     "claude": "chat",
-    "implementer": "coding_simple",
+    "implementer": "coding_complex",
     "debugger": "debugging_hard",
     "tester": "coding_simple",
     "researcher": "data_analysis",
