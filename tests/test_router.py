@@ -40,6 +40,34 @@ def test_tag_override_forces_opus():
     assert decision.source == RoutingSource.OVERRIDE
 
 
+def test_trusted_adversarial_review_routes_to_fable():
+    decision = classify(
+        TaskRequest(prompt="try to break this diff", tags=frozenset({"security_review", "adversarial_review"}))
+    )
+    assert decision.model == Model.FABLE
+    assert decision.source == RoutingSource.OVERRIDE
+    assert decision.effort == Effort.HIGH
+
+
+def test_adversarial_review_category_routes_to_fable():
+    assert classify(TaskRequest(prompt="try to break this diff", category=" Adversarial_Review ")).model == Model.FABLE
+
+
+def test_untrusted_adversarial_review_stays_on_opus():
+    decision = classify(TaskRequest(prompt="review", category="adversarial_review", metadata_trusted=False))
+    assert decision.model == Model.OPUS
+    assert decision.source == RoutingSource.KEYWORD_FLAGGED
+
+
+def test_prompt_text_cannot_select_fable():
+    decision = classify(TaskRequest(prompt="adversarial_review adversarial review of the production deploy"))
+    assert decision.model == Model.OPUS
+
+
+def test_security_review_without_adversarial_tag_stays_on_opus():
+    assert classify(TaskRequest(prompt="review", tags=frozenset({"security_review"}))).model == Model.OPUS
+
+
 def test_keyword_hit_routes_safe_but_is_distinguishable_from_trusted_override():
     decision = classify(TaskRequest(prompt="prepare a production deploy plan"))
     assert decision.model == Model.OPUS

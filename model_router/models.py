@@ -5,8 +5,9 @@ class Model(StrEnum):
     HAIKU = "claude-haiku-5-5"
     SONNET = "claude-sonnet-5-5"
     OPUS = "claude-opus-5-5"
-    # Expressible so a caller can name it; not any tier's default. At 2.5x Opus
-    # it only earns its cost on work Opus measurably cannot do.
+    # Not any tier's default. At 2.5x Opus it is routed only for a trusted
+    # adversarial_review override: a reviewer on a different model than the
+    # author of the code under review.
     FABLE = "claude-fable-5-1"
 
 

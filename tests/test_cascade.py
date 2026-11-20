@@ -129,3 +129,16 @@ def test_emits_telemetry_for_initial_and_escalated_decisions():
     assert len(sink.events) == 2
     assert len(sink.escalations()) == 1
     assert result.escalations == 1
+
+
+def test_fable_route_does_not_escalate():
+    calls = []
+
+    def call_fn(model, effort, prompt):
+        calls.append(model)
+        return "bad"
+
+    task = TaskRequest(prompt="try to break this", tags=frozenset({"adversarial_review"}))
+    result = route_with_cascade(task, call_fn, validate_fn=lambda r: False, max_escalations=2)
+    assert calls == [Model.FABLE]
+    assert result.final_decision.model == Model.FABLE
