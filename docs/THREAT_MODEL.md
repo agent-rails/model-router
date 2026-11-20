@@ -12,7 +12,7 @@ The flip side of #1: common words ("production", "compliance") appear in plenty 
 
 ## 2a. Fable cost from the adversarial_review override
 
-A trusted `adversarial_review` category or tag routes to Fable, 2.5x Opus per token. The cost is bounded by who can declare it: a caller's code, reviewed like any other code. Prompt text cannot select it, and an untrusted declaration falls back to Opus (`test_prompt_text_cannot_select_fable`, `test_untrusted_adversarial_review_stays_on_opus`). The residual is a caller that tags too many agents; the sink's `models` counts show it.
+A trusted `adversarial_review` category or tag routes to Fable, 2.5x Opus per token. The cost is bounded by who can declare it: a caller's code, reviewed like any other code. Prompt text cannot select it, and an untrusted declaration falls back to Opus (`test_prompt_text_cannot_select_fable`, `test_untrusted_adversarial_review_stays_on_opus`). The residual is a caller that tags too many agents, or an agent that spawns a tagged reviewer many times: nothing in the library caps the count. The caller's decision log shows it; a per-session cap belongs in the caller.
 
 ## 3. Silent under-routing from an unrecognized category string
 

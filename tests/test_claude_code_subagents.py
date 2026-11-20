@@ -1,7 +1,11 @@
 import pytest
 from claude_code_subagents import (
+    SUBAGENT_CATEGORY,
+    SUBAGENT_OVERRIDE_TAGS,
     calibration_summary,
     decision_for_subagent,
+    is_mapped_subagent,
+    subagent_key,
     task_for_subagent,
 )
 
@@ -32,6 +36,25 @@ def test_adversarial_reviewers_route_to_fable(agent):
     decision = classify(task_for_subagent(agent, "review this diff for auth bypass"))
     assert decision.model == Model.FABLE
     assert decision.source == RoutingSource.OVERRIDE
+
+
+@pytest.mark.parametrize("name", ["Worf", "WORF", "worf ", "w-orf", "w_orf", "\uff57\uff4f\uff52\uff46", "Spock"])
+def test_a_name_claude_code_resolves_to_a_reviewer_keeps_the_fable_route(name):
+    decision = classify(task_for_subagent(name, "Summarise the diff"))
+    assert decision.model == Model.FABLE
+    assert decision.source == RoutingSource.OVERRIDE
+    assert is_mapped_subagent(name)
+
+
+def test_a_folded_name_still_maps_its_category_and_agentic_flag():
+    task = task_for_subagent("Orchestrator", "plan the release")
+    assert task.category == "long_horizon_agentic"
+    assert task.is_agentic
+
+
+def test_no_two_mapped_subagents_fold_to_the_same_key():
+    names = [*SUBAGENT_CATEGORY, *SUBAGENT_OVERRIDE_TAGS]
+    assert len({subagent_key(name) for name in names}) == len(names)
 
 
 @pytest.mark.parametrize("agent", ["sentinel", "data", "bounty-researcher"])
