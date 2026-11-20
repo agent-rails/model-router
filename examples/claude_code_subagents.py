@@ -51,7 +51,7 @@ SUBAGENT_OVERRIDE_TAGS: dict[str, frozenset[str]] = {
     "bounty-researcher": frozenset({"security_review"}),
     "data": frozenset({"security_review"}),
     "sentinel": frozenset({"security_review"}),
-    "spock": frozenset({"security_review", "adversarial_review"}),
+    "spock": frozenset({"security_review"}),
     "worf": frozenset({"security_review", "adversarial_review"}),
 }
 

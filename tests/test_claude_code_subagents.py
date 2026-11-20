@@ -31,14 +31,13 @@ def test_security_subagent_forces_opus_override():
     assert decision.source == RoutingSource.OVERRIDE
 
 
-@pytest.mark.parametrize("agent", ["worf", "spock"])
-def test_adversarial_reviewers_route_to_fable(agent):
-    decision = classify(task_for_subagent(agent, "review this diff for auth bypass"))
+def test_the_adversarial_reviewer_routes_to_fable():
+    decision = classify(task_for_subagent("worf", "review this diff for auth bypass"))
     assert decision.model == Model.FABLE
     assert decision.source == RoutingSource.OVERRIDE
 
 
-@pytest.mark.parametrize("name", ["Worf", "WORF", "worf ", "w-orf", "w_orf", "\uff57\uff4f\uff52\uff46", "Spock"])
+@pytest.mark.parametrize("name", ["Worf", "WORF", "worf ", "w-orf", "w_orf", "\uff57\uff4f\uff52\uff46"])
 def test_a_name_claude_code_resolves_to_a_reviewer_keeps_the_fable_route(name):
     decision = classify(task_for_subagent(name, "Summarise the diff"))
     assert decision.model == Model.FABLE
@@ -57,7 +56,7 @@ def test_no_two_mapped_subagents_fold_to_the_same_key():
     assert len({subagent_key(name) for name in names}) == len(names)
 
 
-@pytest.mark.parametrize("agent", ["sentinel", "data", "bounty-researcher"])
+@pytest.mark.parametrize("agent", ["sentinel", "spock", "Spock", "data", "bounty-researcher"])
 def test_other_security_agents_stay_on_opus(agent):
     assert classify(task_for_subagent(agent, "review this diff for auth bypass")).model == Model.OPUS
 
