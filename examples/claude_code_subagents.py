@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import unicodedata
 from collections import Counter
 from pathlib import Path
 
@@ -57,6 +58,27 @@ SUBAGENT_OVERRIDE_TAGS: dict[str, frozenset[str]] = {
 SUBAGENT_IS_AGENTIC: frozenset[str] = frozenset({"orchestrator"})
 
 
+def subagent_key(name: str) -> str:
+    """Fold a subagent name the way Claude Code matches it when the exact name misses.
+
+    Claude Code launches "Worf", "w_orf" or a fullwidth "worf" as the worf agent,
+    so an exact-string lookup here would route those spawns on the moderate
+    default instead of the agent's floor.
+    """
+    folded = unicodedata.normalize("NFKC", name).lower()
+    return "".join(c for c in folded if not (c.isspace() or c == "_" or unicodedata.category(c) == "Pd"))
+
+
+_CATEGORY_BY_KEY = {subagent_key(name): category for name, category in SUBAGENT_CATEGORY.items()}
+_TAGS_BY_KEY = {subagent_key(name): tags for name, tags in SUBAGENT_OVERRIDE_TAGS.items()}
+_AGENTIC_KEYS = frozenset(subagent_key(name) for name in SUBAGENT_IS_AGENTIC)
+
+
+def is_mapped_subagent(subagent_type: str) -> bool:
+    key = subagent_key(subagent_type)
+    return key in _CATEGORY_BY_KEY or key in _TAGS_BY_KEY
+
+
 def infer_category(default: str | None, prompt: str) -> tuple[str | None, bool]:
     """Return (category, metadata_trusted) after letting the task's instruction raise the agent default.
 
@@ -82,14 +104,15 @@ def infer_category(default: str | None, prompt: str) -> tuple[str | None, bool]:
 
 
 def task_for_subagent(subagent_type: str, prompt: str, **overrides: object) -> TaskRequest:
-    tags = SUBAGENT_OVERRIDE_TAGS.get(subagent_type, frozenset())
-    default = SUBAGENT_CATEGORY.get(subagent_type)
+    key = subagent_key(subagent_type)
+    tags = _TAGS_BY_KEY.get(key, frozenset())
+    default = _CATEGORY_BY_KEY.get(key)
     category, trusted = (default, True) if "category" in overrides or tags else infer_category(default, prompt)
     fields: dict[str, object] = {
         "prompt": prompt,
         "category": category,
         "tags": tags,
-        "is_agentic": subagent_type in SUBAGENT_IS_AGENTIC,
+        "is_agentic": key in _AGENTIC_KEYS,
         "metadata_trusted": trusted,
     }
     fields.update(overrides)

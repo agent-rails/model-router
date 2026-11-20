@@ -50,7 +50,7 @@ alias = gateway_alias(
 )
 ```
 
-Missing and blank mappings fail closed. The library does not assume that a
+Missing and blank mappings fail closed, and so does a decision whose model is not its tier's model (a Fable `adversarial_review` decision has no tier alias). The library does not assume that a
 particular local or hosted deployment satisfies a quality tier.
 
 Call sites that know their task type should still declare `category`. For a free-text

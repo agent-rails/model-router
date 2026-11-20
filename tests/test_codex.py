@@ -22,6 +22,11 @@ def test_security_override_keeps_strong_floor_and_provenance():
     assert plan.workflow == Workflow.INVESTIGATE_VERIFY
 
 
+def test_adversarial_review_plans_an_investigation():
+    plan = plan_codex(TaskRequest(prompt="review this change", category="adversarial_review"))
+    assert plan.workflow == Workflow.INVESTIGATE_VERIFY
+
+
 def test_keyword_flag_is_not_presented_as_trusted_category():
     plan = plan_codex(TaskRequest(prompt="check the production deployment"))
     assert plan.source == RoutingSource.KEYWORD_FLAGGED

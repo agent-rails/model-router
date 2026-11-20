@@ -36,7 +36,7 @@ class CodexPlan:
 
 
 _RESEARCH_CATEGORIES = frozenset({"architecture", "research", "design"})
-_INVESTIGATE_CATEGORIES = frozenset({"debugging_hard", "code_review", "security_review"})
+_INVESTIGATE_CATEGORIES = frozenset({"debugging_hard", "code_review", "security_review", "adversarial_review"})
 _WORKFLOW_STEPS: dict[Workflow, tuple[str, ...]] = {
     Workflow.DIRECT: ("complete the bounded task", "check the requested output"),
     Workflow.IMPLEMENT_VERIFY: ("inspect relevant files", "make a scoped change", "run relevant checks"),
