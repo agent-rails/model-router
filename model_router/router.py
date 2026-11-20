@@ -3,6 +3,7 @@ from __future__ import annotations
 from model_router.config import (
     AGENTIC_EFFORT_BUMP,
     CATEGORY_TIER,
+    FABLE_OVERRIDE_CATEGORIES,
     LONG_PROMPT_CHAR_THRESHOLD,
     MANY_TOOLS_THRESHOLD,
     OVERRIDE_CATEGORIES,
@@ -30,6 +31,19 @@ def is_recognized_category(category: str) -> bool:
 
 def _normalize_prompt(prompt: str) -> str:
     return prompt.casefold().replace("-", " ").replace("_", " ")
+
+
+def _declared_identifiers(task: TaskRequest) -> frozenset[str]:
+    declared = {_normalize_identifier(tag) for tag in task.tags}
+    if task.category is not None:
+        declared.add(_normalize_identifier(task.category))
+    return frozenset(declared)
+
+
+def _override_model(task: TaskRequest, source: RoutingSource) -> Model:
+    if source == RoutingSource.OVERRIDE and _declared_identifiers(task) & FABLE_OVERRIDE_CATEGORIES:
+        return Model.FABLE
+    return Model.OPUS
 
 
 def _override_reason(task: TaskRequest) -> tuple[str, RoutingSource] | None:
@@ -97,7 +111,7 @@ def classify(task: TaskRequest, emit: EmitFn | None = None) -> RoutingDecision:
         reason, source = override
         effort = Effort.XHIGH if task.is_agentic else Effort.HIGH
         decision = RoutingDecision(
-            model=Model.OPUS,
+            model=_override_model(task, source),
             effort=effort,
             tier=TaskTier.COMPLEX,
             source=source,

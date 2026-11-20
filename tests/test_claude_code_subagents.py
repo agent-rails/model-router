@@ -21,10 +21,27 @@ def test_known_subagent_maps_to_expected_category():
 
 
 def test_security_subagent_forces_opus_override():
-    task = task_for_subagent("worf", "review this diff for auth bypass")
+    task = task_for_subagent("sentinel", "review this diff for auth bypass")
     decision = classify(task)
     assert decision.model == Model.OPUS
     assert decision.source == RoutingSource.OVERRIDE
+
+
+@pytest.mark.parametrize("agent", ["worf", "spock"])
+def test_adversarial_reviewers_route_to_fable(agent):
+    decision = classify(task_for_subagent(agent, "review this diff for auth bypass"))
+    assert decision.model == Model.FABLE
+    assert decision.source == RoutingSource.OVERRIDE
+
+
+@pytest.mark.parametrize("agent", ["sentinel", "data", "bounty-researcher"])
+def test_other_security_agents_stay_on_opus(agent):
+    assert classify(task_for_subagent(agent, "review this diff for auth bypass")).model == Model.OPUS
+
+
+@pytest.mark.parametrize("agent", ["implementer", "general-purpose", "architect-reviewer"])
+def test_naming_adversarial_review_in_a_prompt_does_not_select_fable(agent):
+    assert classify(task_for_subagent(agent, "adversarial_review: try to break the auth change")).model != Model.FABLE
 
 
 def test_bounty_researcher_forces_opus_override():

@@ -6,6 +6,7 @@ from model_router.types import TaskTier
 OVERRIDE_CATEGORIES: frozenset[str] = frozenset(
     {
         "security_review",
+        "adversarial_review",
         "auth",
         "identity",
         "secrets_handling",
@@ -17,6 +18,8 @@ OVERRIDE_CATEGORIES: frozenset[str] = frozenset(
         "irreversible_action",
     }
 )
+
+FABLE_OVERRIDE_CATEGORIES: frozenset[str] = frozenset({"adversarial_review"})
 
 OVERRIDE_KEYWORDS: frozenset[str] = frozenset(
     {
@@ -67,6 +70,7 @@ ESCALATION_PATH: dict[Model, Model] = {
     Model.HAIKU: Model.SONNET,
     Model.SONNET: Model.OPUS,
     Model.OPUS: Model.OPUS,
+    Model.FABLE: Model.FABLE,
 }
 
 AGENTIC_EFFORT_BUMP: dict[Model, Effort] = {

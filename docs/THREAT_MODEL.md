@@ -10,6 +10,10 @@ Lightweight, proportional to what this library actually does: pick a model + eff
 
 The flip side of #1: common words ("production", "compliance") appear in plenty of unrelated prompts and force a Opus/high route that wasn't needed. Accepted as the correct failure direction — worst case is spending more than necessary, never under-protecting. If this becomes a real expense, the fix is pruning `OVERRIDE_KEYWORDS`, not weakening the override behavior itself. Monitor via the same sink.
 
+## 2a. Fable cost from the adversarial_review override
+
+A trusted `adversarial_review` category or tag routes to Fable, 2.5x Opus per token. The cost is bounded by who can declare it: a caller's code, reviewed like any other code. Prompt text cannot select it, and an untrusted declaration falls back to Opus (`test_prompt_text_cannot_select_fable`, `test_untrusted_adversarial_review_stays_on_opus`). The residual is a caller that tags too many agents; the sink's `models` counts show it.
+
 ## 3. Silent under-routing from an unrecognized category string
 
 A typo'd or unknown `category` (not in `CATEGORY_TIER`, not in `OVERRIDE_CATEGORIES`) falls through to the `moderate` default rather than erroring. A genuinely sensitive task with a misspelled category name gets Sonnet, not the override path, and nothing crashes to flag it.
@@ -20,7 +24,7 @@ Mitigation for the *typo'd-but-normalized-doesn't-help* case (e.g. `"authh"`): t
 
 ## 4. Escalation-path cost amplification
 
-An adversarial or pathological input that always fails `validate_fn` forces every escalation step on every call. Bounded by two things: `max_escalations` (caller-set, defaults low) and the hard ceiling at Opus (`ESCALATION_PATH[Opus] == Opus`, loop terminates — see `test_no_infinite_loop_once_already_at_opus_ceiling`). Residual risk lives in a naive `validate_fn` (e.g. "did the model produce any text") that fails on legitimate-but-hard inputs as often as on adversarial ones — that's a caller-side tuning problem, not a router bug, but worth calling out since the router can't verify the quality of a validator it didn't write.
+An adversarial or pathological input that always fails `validate_fn` forces every escalation step on every call. Bounded by two things: `max_escalations` (caller-set, defaults low) and the hard ceilings at Opus and Fable (`ESCALATION_PATH[Opus] == Opus`, `ESCALATION_PATH[Fable] == Fable`, loop terminates — see `test_no_infinite_loop_once_already_at_opus_ceiling`). Residual risk lives in a naive `validate_fn` (e.g. "did the model produce any text") that fails on legitimate-but-hard inputs as often as on adversarial ones — that's a caller-side tuning problem, not a router bug, but worth calling out since the router can't verify the quality of a validator it didn't write.
 
 ## 5. Prompt content in observability
 
